@@ -6,10 +6,11 @@
 <title>InspectPro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f0f0f;color:#e5e5e5;font-family:'Courier New',monospace;min-height:100vh}
-select,input,textarea{font-family:'Courier New',monospace}
+body{background:#0f0f0f;color:#e5e5e5;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+select,input,textarea{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#333}
 </style>
 </head>
@@ -19,7 +20,10 @@ select,input,textarea{font-family:'Courier New',monospace}
 const {useState,useEffect,useRef,createElement:h}=React;
 
 // ─── DATOS ────────────────────────────────────────────────────────────────────
-const INSPECTORES=["Brayan","Sebastian"];
+const INSPECTORES=[
+  {id:"brayan", name:"Brayan Uriel Martínez Martínez", short:"Brayan", puesto:"Auxiliar de Almacén"},
+  {id:"sebastian", name:"Sebastian Prieto Cervantes", short:"Sebastian", puesto:"Encargado de Almacén"},
+];
 const ALMACEN_FIELDS=[
   {key:"area_limpia",label:"Área limpia y seca",type:"check"},
   {key:"sin_olores",label:"Área sin olores extraños",type:"check"},
@@ -87,7 +91,31 @@ const AREA_FORMS={
 const FORM_KEYS=Object.keys(AREA_FORMS);
 const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚"};
 const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa"};
+const getInspector=id=>INSPECTORES.find(i=>i.id===id)||{name:id,puesto:""};
 const FORMS_KEY="inspectpro-local-v1";
+// Per-form storage keys
+const FORM_STORAGE_KEYS={
+  alm1_pt:"ip-alm1-pt",
+  alm2_pt:"ip-alm2-pt",
+  alm1_mp:"ip-alm1-mp",
+  alm2_mp:"ip-alm2-mp",
+  recepcion:"ip-recepcion",
+};
+function loadAllRecords(){
+  const all=[];
+  Object.entries(FORM_STORAGE_KEYS).forEach(([fk,key])=>{
+    const recs=loadLocal(key,[]);
+    all.push(...recs);
+  });
+  // Sort by createdAt desc
+  return all.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+}
+function saveRecord(formKey, records){
+  saveLocal(FORM_STORAGE_KEYS[formKey]||FORMS_KEY, records);
+}
+function loadFormRecords(formKey){
+  return loadLocal(FORM_STORAGE_KEYS[formKey]||FORMS_KEY, []);
+}
 const TEMP_KEY="inspectpro-temp-v1";
 const TEMP_MIN=15,TEMP_MAX=25,CHART_MAX=50;
 const TEMP_AREAS=["Almacén 1","Almacén 2"];
@@ -164,29 +192,29 @@ function exportPDF(record){
 
 // ─── ESTILOS COMUNES ──────────────────────────────────────────────────────────
 const S={
-  app:{background:"#0f0f0f",minHeight:"100vh",color:"#e5e5e5",fontFamily:"'Courier New',monospace"},
+  app:{background:"#0f0f0f",minHeight:"100vh",color:"#e5e5e5",fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif"},
   hdr:{background:"#1a1a1a",borderBottom:"2px solid #f59e0b",padding:"13px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10},
-  logo:{fontSize:16,fontWeight:700,color:"#f59e0b",letterSpacing:3},
-  sub:{fontSize:9,color:"#555",letterSpacing:1},
+  logo:{fontSize:16,fontWeight:700,color:"#f59e0b",letterSpacing:1},
+  sub:{fontSize:10,color:"#555",letterSpacing:0.5},
   nav:{display:"flex",gap:7,alignItems:"center"},
   body:{maxWidth:900,margin:"0 auto",padding:"24px 14px"},
   card:{background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:8,padding:20,marginBottom:16},
-  lbl:{fontSize:10,color:"#f59e0b",letterSpacing:2,textTransform:"uppercase",display:"block",marginBottom:5},
-  inp:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"7px 10px",width:"100%",fontSize:12,fontFamily:"inherit",boxSizing:"border-box"},
-  sel:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"7px 10px",width:"100%",fontSize:12,fontFamily:"inherit"},
-  ta:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"9px 11px",width:"100%",fontSize:12,fontFamily:"inherit",resize:"vertical",minHeight:80,boxSizing:"border-box"},
+  lbl:{fontSize:10,color:"#f59e0b",letterSpacing:0.5,textTransform:"uppercase",display:"block",marginBottom:5},
+  inp:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"7px 10px",width:"100%",fontSize:12,fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif",boxSizing:"border-box"},
+  sel:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"7px 10px",width:"100%",fontSize:12,fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif"},
+  ta:{background:"#0f0f0f",color:"#e5e5e5",border:"1px solid #333",borderRadius:4,padding:"9px 11px",width:"100%",fontSize:12,fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif",resize:"vertical",minHeight:80,boxSizing:"border-box"},
   g2:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12},
-  secTit:{fontSize:11,color:"#f59e0b",letterSpacing:2,textTransform:"uppercase",marginBottom:13,fontWeight:700},
+  secTit:{fontSize:11,color:"#f59e0b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:13,fontWeight:700},
   grpHdr:{background:"#222",borderRadius:5,padding:"7px 12px",marginBottom:9,display:"flex",justifyContent:"space-between",alignItems:"center"},
   chkRow:v=>({padding:"10px 13px",background:v===true?"#052e16":v===false?"#2d0a0a":v==="na"?"#1a1a2a":"#111",borderRadius:5,marginBottom:6,border:"1px solid "+(v===true?"#166534":v===false?"#991b1b":v==="na"?"#3730a3":"#222")}),
   btnGrp:{display:"flex",gap:5,flexShrink:0,marginTop:4},
   cbtn:(c,bg)=>({background:bg,color:c,border:"none",borderRadius:4,padding:"5px 11px",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap"}),
-  pBtn:{background:"#f59e0b",color:"#0f0f0f",border:"none",borderRadius:6,padding:"11px 22px",cursor:"pointer",fontSize:13,fontWeight:700,letterSpacing:2,width:"100%"},
+  pBtn:{background:"#f59e0b",color:"#0f0f0f",border:"none",borderRadius:6,padding:"11px 22px",cursor:"pointer",fontSize:13,fontWeight:700,letterSpacing:0.5,width:"100%"},
   nBtn:a=>({background:a?"#f59e0b":"transparent",color:a?"#0f0f0f":"#888",border:"1px solid "+(a?"#f59e0b":"#333"),borderRadius:4,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:700}),
   pdfBtn:{background:"#1e3a5f",color:"#60a5fa",border:"1px solid #2d5a9e",borderRadius:5,padding:"8px 16px",cursor:"pointer",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:6},
   hRow:{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"#111",borderRadius:6,marginBottom:7,border:"1px solid #222",cursor:"pointer"},
-  tempInp:{background:"#0a1a0a",color:"#e5e5e5",border:"1px solid #166534",borderRadius:4,padding:"4px 8px",fontSize:11,fontFamily:"inherit",width:80,marginTop:6},
-  dateInp:{background:"#0a1a0a",color:"#e5e5e5",border:"1px solid #3730a3",borderRadius:4,padding:"4px 8px",fontSize:11,fontFamily:"inherit",width:135,marginTop:6},
+  tempInp:{background:"#0a1a0a",color:"#e5e5e5",border:"1px solid #166534",borderRadius:4,padding:"4px 8px",fontSize:11,fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif",width:80,marginTop:6},
+  dateInp:{background:"#0a1a0a",color:"#e5e5e5",border:"1px solid #3730a3",borderRadius:4,padding:"4px 8px",fontSize:11,fontFamily:"Segoe UI,system-ui,-apple-system,sans-serif",width:135,marginTop:6},
 };
 
 // ─── COMPONENTES ──────────────────────────────────────────────────────────────
@@ -216,7 +244,7 @@ function TempChart({records,area}){
       const y=PT+CH-(t/CHART_MAX)*CH;
       ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+CW,y); ctx.stroke();
-      ctx.fillStyle="#666"; ctx.font="10px 'Courier New'"; ctx.textAlign="right";
+      ctx.fillStyle="#666"; ctx.font="10px Arial"; ctx.textAlign="right";
       ctx.fillText(`${t}°`,PL-5,y+4);
     });
     // Range band
@@ -227,7 +255,7 @@ function TempChart({records,area}){
     ctx.beginPath(); ctx.moveTo(PL,yMin); ctx.lineTo(PL+CW,yMin); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(PL,yMax); ctx.lineTo(PL+CW,yMax); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle="rgba(34,197,94,0.6)"; ctx.font="8px 'Courier New'"; ctx.textAlign="left";
+    ctx.fillStyle="rgba(34,197,94,0.6)"; ctx.font="8px Arial"; ctx.textAlign="left";
     ctx.fillText("25°C",PL+3,yMax-3); ctx.fillText("15°C",PL+3,yMin+10);
     // X axis
     const areaKey=area==="Almacén 1"?"alm1":"alm2";
@@ -241,7 +269,7 @@ function TempChart({records,area}){
       if(day.dateStr===TODAY){ctx.fillStyle="rgba(245,158,11,0.07)";ctx.fillRect(PL+i*bW,PT,bW,CH);}
       if(parseInt(day.label)%5===0||day.dateStr===TODAY){
         ctx.fillStyle=day.dateStr===TODAY?"#d97706":"#999";
-        ctx.font=day.dateStr===TODAY?"bold 9px 'Courier New'":"9px 'Courier New'";
+        ctx.font=day.dateStr===TODAY?"bold 9px Arial":"9px Arial";
         ctx.textAlign="center"; ctx.fillText(day.label,x,PT+CH+14);
       }
     });
@@ -263,13 +291,13 @@ function TempChart({records,area}){
       const col=ok?"#22c55e":"#ef4444";
       ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fillStyle=col+"33"; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
-      ctx.fillStyle=col; ctx.font="bold 9px 'Courier New'"; ctx.textAlign="center";
+      ctx.fillStyle=col; ctx.font="bold 9px Arial"; ctx.textAlign="center";
       ctx.fillText(`${p.temp}°`,p.x,p.y-8);
     });
     // Axes
     ctx.strokeStyle="#999"; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,PT+CH); ctx.lineTo(PL+CW,PT+CH); ctx.stroke();
-    ctx.fillStyle="#333"; ctx.font="9px 'Courier New'"; ctx.textAlign="center";
+    ctx.fillStyle="#333"; ctx.font="9px Arial"; ctx.textAlign="center";
     ctx.fillText(MONTH_NAME.toUpperCase(),W/2,H-6);
   },[records,area]);
   return h("canvas",{ref:canvasRef,width:800,height:280,style:{width:"100%",height:"auto",borderRadius:6,display:"block",background:"#f8fafc"}});
@@ -450,6 +478,11 @@ function TempModule({onBack}){
     setTimeout(()=>{setSaved(false);setSubView("chart");},1500);
   }
 
+  function deleteTempRecord(id){
+    const nr={...records,[areaKey]:allRecs.filter(r=>r.id!==id)};
+    setRecords(nr); saveLocal(TEMP_KEY,nr);
+  }
+
   const readBtn=(a,c)=>({background:a?c+"22":"#111",color:a?c:"#555",border:`1px solid ${a?c:"#333"}`,borderRadius:5,padding:"10px 18px",cursor:"pointer",fontSize:12,fontWeight:700,flex:1});
 
   return h("div",{style:S.app},
@@ -509,7 +542,7 @@ function TempModule({onBack}){
         allRecs.length>0&&h("div",{style:S.card},
           h("div",{style:S.secTit},"Últimos registros"),
           h("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:11}},
-            h("thead",null,h("tr",null,...["Fecha","Lectura","Hora","Temp °C","Estado"].map(col=>h("th",{key:col,style:{padding:"6px 10px",textAlign:"left",color:"#f59e0b",borderBottom:"1px solid #2a2a2a",fontSize:10}},col)))),
+            h("thead",null,h("tr",null,...["Fecha","Lectura","Hora","Temp °C","Estado",""].map(col=>h("th",{key:col,style:{padding:"6px 10px",textAlign:"left",color:"#f59e0b",borderBottom:"1px solid #2a2a2a",fontSize:10}},col)))),
             h("tbody",null,...[...allRecs].reverse().slice(0,8).map(r=>{
               const ok=r.temp>=TEMP_MIN&&r.temp<=TEMP_MAX;
               return h("tr",{key:r.id,style:{borderBottom:"1px solid #1a1a1a"}},
@@ -517,7 +550,8 @@ function TempModule({onBack}){
                 h("td",{style:{padding:"6px 10px",color:"#666"}},(()=>{ const h=parseInt((r.time||"").split(":")[0]); const icon=h<12?"☀️":"🌙"; return r.reading==="1"?"1ª "+icon:"2ª "+icon; })()),
                 h("td",{style:{padding:"6px 10px",color:"#666"}},r.time),
                 h("td",{style:{padding:"6px 10px",fontWeight:700,color:ok?"#22c55e":"#ef4444"}},`${r.temp}°C`),
-                h("td",{style:{padding:"6px 10px"}},h("span",{style:{background:ok?"#052e16":"#2d0a0a",color:ok?"#22c55e":"#ef4444",border:`1px solid ${ok?"#166534":"#991b1b"}`,borderRadius:3,padding:"2px 7px",fontSize:9,fontWeight:700}},ok?"CORRECTO":"ALERTA"))
+                h("td",{style:{padding:"6px 10px"}},h("span",{style:{background:ok?"#052e16":"#2d0a0a",color:ok?"#22c55e":"#ef4444",border:`1px solid ${ok?"#166534":"#991b1b"}`,borderRadius:3,padding:"2px 7px",fontSize:9,fontWeight:700}},ok?"CORRECTO":"ALERTA")),
+                h("td",{style:{padding:"6px 10px"}},h("button",{style:{background:"transparent",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:700},onClick:()=>deleteTempRecord(r.id)},"🗑️"))
               );
             }))
           )
@@ -572,17 +606,20 @@ function TempModule({onBack}){
 // ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
 function App(){
   const [module,setModule]=useState("home"); // home | forms | temp
-  const [records,setRecords]=useState(()=>loadLocal(FORMS_KEY,[]));
+  const [currentUser,setCurrentUser]=useState(INSPECTORES[0].id);
+  const [records,setRecords]=useState(()=>loadAllRecords());
+  const [activeTab,setActiveTab]=useState(FORM_KEYS[0]);
   const [sel,setSel]=useState(null);
   const [fk,setFk]=useState(FORM_KEYS[0]);
-  const [inspector,setInspector]=useState(INSPECTORES[0]);
+  const [inspector,setInspector]=useState(()=>currentUser);
   const [fecha,setFecha]=useState(TODAY);
   const [vals,setVals]=useState(()=>initValues(FORM_KEYS[0]));
   const [notas,setNotas]=useState("");
   const [submitted,setSubmitted]=useState(false);
   const [formView,setFormView]=useState("home"); // home | form | history | detail
+  const [selectedSection,setSelectedSection]=useState(null); // null | 'consome' | 'frascos'
 
-  const openForm=key=>{setFk(key);setVals(initValues(key));setNotas("");setFormView("form");setModule("forms");};
+  const openForm=key=>{setFk(key);setVals(initValues(key));setNotas("");setSelectedSection(null);setFormView("form");setModule("forms");};
   const setV=(k,v)=>setVals(prev=>({...prev,[k]:v}));
   const fd=AREA_FORMS[fk];
   const fields=fd?.fields||[];
@@ -593,11 +630,43 @@ function App(){
   const allOk=allCk&&allTx;
   const score=calcScore(fields,vals);
 
+  const OPTIONAL_GROUPS_CONST=["Consome y/o Salsa","Frascos y Tapas"];
+  function calcVisibleScore(){
+    if(fk!=="recepcion") return score;
+    const allGrps=getGroups(fields);
+    const mandatoryFields=Object.entries(allGrps)
+      .filter(([gn])=>!OPTIONAL_GROUPS_CONST.includes(gn))
+      .flatMap(([,gf])=>gf);
+    const optFields=selectedSection
+      ?(allGrps[selectedSection==="consome"?"Consome y/o Salsa":"Frascos y Tapas"]||[])
+      :[];
+    return calcScore([...mandatoryFields,...optFields], vals);
+  }
+
   function submit(){
-    const rec={id:genId(),formKey:fk,area:fd.area,title:fd.title,inspector,fecha,values:vals,fields,score,notas,createdAt:new Date().toISOString()};
-    const nr=[rec,...records];
-    setRecords(nr); saveLocal(FORMS_KEY,nr); setSubmitted(true);
+    const visibleScore=calcVisibleScore();
+    const inspData=getInspector(inspector); const rec={id:genId(),formKey:fk,area:fd.area,title:fd.title,inspector:inspData.name,inspectorId:inspector,inspectorPuesto:inspData.puesto,fecha,values:vals,fields,score:visibleScore,selectedSection,notas,createdAt:new Date().toISOString()};
+    const formRecs=loadFormRecords(fk);
+    const formNr=[rec,...formRecs];
+    saveRecord(fk, formNr);
+    setRecords(loadAllRecords());
+    setSubmitted(true);
     setTimeout(()=>{setSubmitted(false);setFormView("history");setVals(initValues(fk));setNotas("");},1500);
+  }
+
+  function deleteRecord(id, inspectorName){
+    const current=getInspector(currentUser);
+    if(current.name!==inspectorName){
+      alert("Solo "+inspectorName+" puede eliminar este registro.");
+      return;
+    }
+    // Find which form this record belongs to and delete from correct storage
+    const formKey=records.find(r=>r.id===id)?.formKey;
+    if(formKey){
+      const formRecs=loadFormRecords(formKey).filter(r=>r.id!==id);
+      saveRecord(formKey, formRecs);
+    }
+    setRecords(loadAllRecords()); setFormView("history");
   }
 
   // ── Módulo temperaturas
@@ -608,6 +677,12 @@ function App(){
     h("div",{style:S.hdr},
       h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},"Sistema de inspección y calidad")),
       h("div",{style:S.nav},
+        h("div",{style:{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #f59e0b44",borderRadius:6,padding:"4px 10px"}},
+          h("span",{style:{fontSize:12}},"👤"),
+          h("select",{style:{background:"transparent",color:"#f59e0b",border:"none",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"},value:currentUser,onChange:e=>setCurrentUser(e.target.value)},
+            ...INSPECTORES.map(i=>h("option",{key:i.id,value:i.id},i.short+" — "+i.puesto))
+          )
+        ),
         h("button",{style:S.nBtn(false),onClick:()=>{setFormView("history");setModule("forms");}},"Historial")
       )
     ),
@@ -667,7 +742,29 @@ function App(){
   if(module==="forms"){
     // FORM
     if(formView==="form"){
-      const groups=getGroups(fields);
+      // For recepcion: separate optional groups from mandatory ones
+      const OPTIONAL_GROUPS=["Consome y/o Salsa","Frascos y Tapas"];
+      const isRecepcion = fk==="recepcion";
+      const allGroups=getGroups(fields);
+      // Mandatory groups (always shown)
+      const mandatoryGroups=isRecepcion
+        ? Object.fromEntries(Object.entries(allGroups).filter(([gn])=>!OPTIONAL_GROUPS.includes(gn)))
+        : allGroups;
+      // Optional group fields (only shown if selected)
+      const activeOptionalFields = isRecepcion && selectedSection
+        ? (allGroups[selectedSection==="consome"?"Consome y/o Salsa":"Frascos y Tapas"]||[])
+        : [];
+
+      // Recalculate allCk considering only visible check fields
+      const visibleCheckFs = isRecepcion
+        ? [
+            ...Object.values(mandatoryGroups).flat(),
+            ...activeOptionalFields
+          ].filter(f=>f.type==="check"||f.type==="check_with_input")
+        : checkFs;
+      const visibleAllCk = visibleCheckFs.every(f=>vals[f.key+"_check"]!==null);
+      const visibleAllOk = visibleAllCk && allTx;
+
       return h("div",{style:S.app},
         h("div",{style:S.hdr},
           h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},`${fd.area} — ${fd.title}`)),
@@ -676,16 +773,16 @@ function App(){
         h("div",{style:S.body},
           submitted?h("div",{style:{...S.card,textAlign:"center",borderColor:"#22c55e",padding:48}},
             h("div",{style:{fontSize:44,marginBottom:10}},"✅"),
-            h("div",{style:{color:"#22c55e",fontSize:17,fontWeight:700,letterSpacing:2}},"REGISTRO GUARDADO")
+            h("div",{style:{color:"#22c55e",fontSize:17,fontWeight:700,letterSpacing:0.5}},"REGISTRO GUARDADO")
           ):h("div",null,
             h("div",{style:{...S.card,borderColor:FORM_COLORS[fk]+"55",textAlign:"center",padding:13}},
-              h("div",{style:{fontSize:9,color:FORM_COLORS[fk],letterSpacing:2,textTransform:"uppercase",marginBottom:3}},fd.area),
+              h("div",{style:{fontSize:9,color:FORM_COLORS[fk],letterSpacing:0.5,textTransform:"uppercase",marginBottom:3}},fd.area),
               h("div",{style:{fontSize:14,fontWeight:700}},fd.title)
             ),
             h("div",{style:S.card},
               h("div",{style:S.secTit},"Datos generales"),
               h("div",{style:S.g2},
-                h("div",null,h("label",{style:S.lbl},"Inspector"),h("select",{style:S.sel,value:inspector,onChange:e=>setInspector(e.target.value)},...INSPECTORES.map(i=>h("option",{key:i},i)))),
+                h("div",null,h("label",{style:S.lbl},"Inspector"),h("select",{style:S.sel,value:inspector,onChange:e=>setInspector(e.target.value)},...INSPECTORES.map(i=>h("option",{key:i.id,value:i.id},i.name+" — "+i.puesto)))),
                 h("div",null,h("label",{style:S.lbl},"Fecha"),h("input",{type:"date",style:S.inp,value:fecha,onChange:e=>setFecha(e.target.value)}))
               )
             ),
@@ -696,7 +793,8 @@ function App(){
                 h("input",{type:f.type==="date"?"date":"text",style:S.inp,value:vals[f.key]||"",placeholder:f.placeholder||"",onChange:e=>setV(f.key,e.target.value)})
               )))
             ),
-            ...Object.entries(groups).map(([gn,gf])=>h("div",{key:gn,style:S.card},
+            // Mandatory groups
+            ...Object.entries(mandatoryGroups).map(([gn,gf])=>h("div",{key:gn,style:S.card},
               h("div",{style:S.grpHdr},
                 h("span",{style:{fontSize:11,fontWeight:700,color:"#f59e0b"}},gn),
                 h("span",{style:{fontSize:10,color:"#555"}},`${gf.filter(f=>vals[f.key+"_check"]!==null).length}/${gf.length}`)
@@ -719,47 +817,106 @@ function App(){
                 );
               })
             )),
-            score&&allCk&&h("div",{style:{...S.card,borderColor:score.pass/(score.total-(score.na||0)||1)>=0.8?"#22c55e44":"#f59e0b44"}},
+            // Optional section selector (only for recepcion)
+            isRecepcion&&h("div",{style:S.card},
+              h("div",{style:S.secTit},"Sección opcional — elige una"),
+              h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
+                ...[
+                  {key:"consome",label:"Consome y/o Salsa",icon:"🍲",color:"#f59e0b"},
+                  {key:"frascos",label:"Frascos y Tapas",icon:"🫙",color:"#60a5fa"},
+                ].map(opt=>h("button",{key:opt.key,onClick:()=>setSelectedSection(selectedSection===opt.key?null:opt.key),style:{background:selectedSection===opt.key?opt.color+"22":"#111",border:`2px solid ${selectedSection===opt.key?opt.color:opt.color+"33"}`,borderRadius:8,padding:"14px",cursor:"pointer",textAlign:"center"}},
+                  h("div",{style:{fontSize:24,marginBottom:6}},opt.icon),
+                  h("div",{style:{fontSize:12,fontWeight:700,color:selectedSection===opt.key?opt.color:"#888"}},opt.label),
+                  h("div",{style:{fontSize:10,color:selectedSection===opt.key?opt.color+"aa":"#555",marginTop:3}},selectedSection===opt.key?"✓ Seleccionado — toca para quitar":"Toca para activar")
+                ))
+              )
+            ),
+            // Active optional group fields
+            isRecepcion&&selectedSection&&activeOptionalFields.length>0&&h("div",{style:{...S.card,borderColor:selectedSection==="consome"?"#f59e0b44":"#60a5fa44"}},
+              h("div",{style:S.grpHdr},
+                h("span",{style:{fontSize:11,fontWeight:700,color:selectedSection==="consome"?"#f59e0b":"#60a5fa"}},selectedSection==="consome"?"🍲 Consome y/o Salsa":"🫙 Frascos y Tapas"),
+                h("span",{style:{fontSize:10,color:"#555"}},`${activeOptionalFields.filter(f=>vals[f.key+"_check"]!==null).length}/${activeOptionalFields.length}`)
+              ),
+              ...activeOptionalFields.map((f,i)=>{
+                const v=vals[f.key+"_check"];
+                return h("div",{key:f.key,style:S.chkRow(v)},
+                  h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:6}},
+                    h("span",{style:{fontSize:12,flex:1,minWidth:120,paddingRight:6}},h("span",{style:{color:"#555",marginRight:4}},`${i+1}.`),f.label),
+                    h("div",{style:S.btnGrp},
+                      h("button",{style:S.cbtn(v===true?"#0f0f0f":"#22c55e",v===true?"#22c55e":"#1a2e1a"),onClick:()=>setV(f.key+"_check",true)},"✓ SÍ"),
+                      h("button",{style:S.cbtn(v===false?"#0f0f0f":"#ef4444",v===false?"#ef4444":"#2a1010"),onClick:()=>setV(f.key+"_check",false)},"✗ NO"),
+                      h("button",{style:S.cbtn(v==="na"?"#0f0f0f":"#818cf8",v==="na"?"#818cf8":"#1a1a2e"),onClick:()=>setV(f.key+"_check","na")},"— N/A")
+                    )
+                  )
+                );
+              })
+            ),
+            // Score
+            (()=>{const vs=calcVisibleScore(); return vs&&visibleAllCk&&h("div",{style:{...S.card,borderColor:vs.pass/(vs.total-(vs.na||0)||1)>=0.8?"#22c55e44":"#f59e0b44"}},
               h("div",{style:S.secTit},"Resultado preliminar"),
               h("div",{style:{display:"flex",gap:18,marginBottom:8}},
-                h("span",{style:{color:"#22c55e",fontSize:12}},`✓ Cumple: ${score.pass}`),
-                h("span",{style:{color:"#ef4444",fontSize:12}},`✗ No cumple: ${score.fail}`),
-                h("span",{style:{color:"#818cf8",fontSize:12}},`— N/A: ${score.na}`)
+                h("span",{style:{color:"#22c55e",fontSize:12}},`✓ Cumple: ${vs.pass}`),
+                h("span",{style:{color:"#ef4444",fontSize:12}},`✗ No cumple: ${vs.fail}`),
+                h("span",{style:{color:"#818cf8",fontSize:12}},`— N/A: ${vs.na}`)
               ),
-              h(StatusBadge,{score})
-            ),
+              h(StatusBadge,{score:vs})
+            );})(),
             h("div",{style:S.card},
               h("label",{style:S.lbl},"Observaciones"),
               h("textarea",{style:S.ta,value:notas,onChange:e=>setNotas(e.target.value),placeholder:"Observaciones, acciones correctivas o notas relevantes..."})
             ),
-            h("button",{style:{...S.pBtn,opacity:allOk?1:0.4},disabled:!allOk,onClick:submit},"GUARDAR REGISTRO")
+            h("button",{style:{...S.pBtn,opacity:visibleAllOk?1:0.4},disabled:!visibleAllOk,onClick:submit},"GUARDAR REGISTRO")
           )
         )
       );
     }
 
     // HISTORY
-    if(formView==="history") return h("div",{style:S.app},
-      h("div",{style:S.hdr},
-        h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},"Historial")),
-        h("div",{style:S.nav},h("button",{style:S.nBtn(false),onClick:()=>setModule("home")},"← Inicio"))
-      ),
-      h("div",{style:S.body},
-        records.length===0?h("div",{style:{textAlign:"center",padding:60,color:"#444"}},
-          h("div",{style:{fontSize:44,marginBottom:10}},"📋"),
-          h("div",{style:{fontSize:14,marginBottom:8}},"Sin registros aún"),
-          h("button",{style:{...S.pBtn,maxWidth:200,margin:"16px auto 0"},onClick:()=>setModule("home")},"← Ir al inicio")
-        ):records.map(r=>h("div",{key:r.id,style:S.hRow,onClick:()=>{setSel(r);setFormView("detail");}},
-          h("span",{style:{fontSize:16}},FORM_ICONS[r.formKey]||"📋"),
-          h("div",{style:{flex:1}},
-            h("div",{style:{fontSize:12,fontWeight:700}},r.title),
-            h("div",{style:{fontSize:10,color:"#666",marginTop:2}},`${r.area} · ${r.inspector} · ${fmtDate(r.createdAt)}`)
+    if(formView==="history"){
+      // Group records by formKey
+      const grouped={};
+      FORM_KEYS.forEach(fk=>{ grouped[fk]=records.filter(r=>r.formKey===fk); });
+      const tabRecs=grouped[activeTab]||[];
+
+      return h("div",{style:S.app},
+        h("div",{style:S.hdr},
+          h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},"Historial por formulario")),
+          h("div",{style:S.nav},h("button",{style:S.nBtn(false),onClick:()=>setModule("home")},"← Inicio"))
+        ),
+        h("div",{style:S.body},
+          // Tab selector
+          h("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:20}},
+            ...FORM_KEYS.map(fk=>{
+              const def=AREA_FORMS[fk];
+              const col=FORM_COLORS[fk];
+              const count=grouped[fk]?.length||0;
+              const isActive=activeTab===fk;
+              return h("button",{key:fk,onClick:()=>setActiveTab(fk),style:{display:"flex",alignItems:"center",gap:10,padding:"11px 16px",background:isActive?col+"22":"#111",border:`1px solid ${isActive?col:col+"33"}`,borderRadius:7,cursor:"pointer",textAlign:"left"}},
+                h("span",{style:{fontSize:16}},FORM_ICONS[fk]),
+                h("div",{style:{flex:1}},
+                  h("div",{style:{fontSize:12,fontWeight:700,color:isActive?col:"#aaa"}},def.title),
+                  h("div",{style:{fontSize:10,color:"#666"}},def.area)
+                ),
+                h("span",{style:{background:isActive?col:"#222",color:isActive?"#0f0f0f":"#666",borderRadius:10,padding:"2px 8px",fontSize:10,fontWeight:700}},count+" registros")
+              );
+            })
           ),
-          h(StatusBadge,{score:r.score}),
-          h("span",{style:{color:"#444"}},"›")
-        ))
-      )
-    );
+          // Records for active tab
+          tabRecs.length===0?h("div",{style:{textAlign:"center",padding:40,color:"#444",background:"#111",borderRadius:8}},
+            h("div",{style:{fontSize:36,marginBottom:8}},"📋"),
+            h("div",{style:{fontSize:13}},"Sin registros para este formulario")
+          ):tabRecs.map(r=>h("div",{key:r.id,style:S.hRow,onClick:()=>{setSel(r);setFormView("detail");}},
+            h("span",{style:{fontSize:16}},FORM_ICONS[r.formKey]||"📋"),
+            h("div",{style:{flex:1}},
+              h("div",{style:{fontSize:12,fontWeight:700}},r.area+" · "+r.fecha),
+              h("div",{style:{fontSize:10,color:"#666",marginTop:2}},`${r.inspector}${r.inspectorPuesto?" ("+r.inspectorPuesto+")":""} · ${fmtDate(r.createdAt)}`)
+            ),
+            h(StatusBadge,{score:r.score}),
+            h("span",{style:{color:"#444"}},"›")
+          ))
+        )
+      );
+    }
 
     // DETAIL
     if(formView==="detail"&&sel){
@@ -773,6 +930,7 @@ function App(){
           h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},"Detalle del registro")),
           h("div",{style:S.nav},
             h("button",{style:S.pdfBtn,onClick:()=>exportPDF(sel)},"📄 Exportar PDF"),
+            h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"5px 12px",cursor:"pointer",fontSize:11,fontWeight:700},onClick:()=>deleteRecord(sel.id,sel.inspector)},"🗑️ Eliminar"),
             h("button",{style:S.nBtn(false),onClick:()=>setFormView("history")},"← Historial")
           )
         ),
@@ -782,7 +940,8 @@ function App(){
               h("div",null,
                 h("span",{style:{background:ac+"22",color:ac,border:`1px solid ${ac}44`,borderRadius:4,padding:"2px 8px",fontSize:9,fontWeight:700,display:"inline-block",marginBottom:5}},sel.area),
                 h("div",{style:{fontSize:13,fontWeight:700,marginBottom:3}},sel.title),
-                h("div",{style:{fontSize:11,color:"#aaa"}},sel.inspector),
+                h("div",{style:{fontSize:13,fontWeight:700}},sel.inspector),
+              h("div",{style:{fontSize:11,color:"#60a5fa"}},sel.inspectorPuesto||"Inspector"),
                 h("div",{style:{fontSize:10,color:"#666"}},`${fmtDate(sel.createdAt)} · Fecha: ${sel.fecha}`)
               ),
               h(StatusBadge,{score:sel.score})
@@ -822,7 +981,8 @@ function App(){
             h("div",{style:S.secTit},"Observaciones"),
             h("div",{style:{fontSize:11,color:"#aaa",lineHeight:1.7}},sel.notas)
           ),
-          h("button",{style:{...S.pdfBtn,width:"100%",justifyContent:"center",padding:"12px"},onClick:()=>exportPDF(sel)},"📄 Exportar a PDF")
+          h("button",{style:{...S.pdfBtn,width:"100%",justifyContent:"center",padding:"12px"},onClick:()=>exportPDF(sel)},"📄 Exportar a PDF"),
+          h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:6,padding:"11px 22px",cursor:"pointer",fontSize:12,fontWeight:700,width:"100%",marginTop:8,letterSpacing:1},onClick:()=>deleteRecord(sel.id,sel.inspector)},"🗑️ Eliminar este registro")
         )
       );
     }
