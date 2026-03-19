@@ -89,7 +89,7 @@ const AREA_FORMS={
   recepcion:{area:"Recepción",title:"Recepción de Materias Primas",fields:RECEPCION_FIELDS},
   transporte:{area:"Logística",title:"Registro Evaluación de Unidad de Transporte de Producto Terminado",fields:[
     // Información de acompañamiento al producto — texto
-    {key:"no_pedido",label:"No. de Pedido",type:"text",placeholder:"Número de pedido",group_text:"Información de acompañamiento al producto"},
+    {key:"no_pedido",label:"No. de Pedido",type:"multi_text",placeholder:"Número de pedido",maxEntries:10,group_text:"Información de acompañamiento al producto"},
     {key:"fecha_embarque",label:"Fecha de embarque",type:"date",group_text:"Información de acompañamiento al producto"},
     {key:"no_placas",label:"No. de Placas de la unidad",type:"text",placeholder:"Placas del vehículo",group_text:"Información de acompañamiento al producto"},
     {key:"proveedor_transporte",label:"Nombre de proveedor del servicio de transporte y/o chofer",type:"text",placeholder:"Nombre del proveedor / chofer",group_text:"Información de acompañamiento al producto"},
@@ -921,7 +921,7 @@ function App(){
                     entries.length<(f.maxEntries||10)&&h("button",{
                       style:{background:"#0a1628",color:"#60a5fa",border:"1px solid #1e3a5f",borderRadius:4,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,marginTop:2},
                       onClick:()=>setV(f.key,[...entries,""])
-                    },"+ Agregar remisión")
+                    },"+ Agregar "+f.label)
                   );
                 }
                 if(f.type==="producto_list"){
