@@ -87,10 +87,42 @@ const AREA_FORMS={
   alm1_mp:{area:"Almacén 1",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   alm2_mp:{area:"Almacén 2",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   recepcion:{area:"Recepción",title:"Recepción de Materias Primas",fields:RECEPCION_FIELDS},
+  transporte:{area:"Logística",title:"Registro Evaluación de Unidad de Transporte de Producto Terminado",fields:[
+    // Información de acompañamiento al producto — texto
+    {key:"no_pedido",label:"No. de Pedido",type:"text",placeholder:"Número de pedido",group_text:"Información de acompañamiento al producto"},
+    {key:"fecha_embarque",label:"Fecha de embarque",type:"date",group_text:"Información de acompañamiento al producto"},
+    {key:"no_placas",label:"No. de Placas de la unidad",type:"text",placeholder:"Placas del vehículo",group_text:"Información de acompañamiento al producto"},
+    {key:"proveedor_transporte",label:"Nombre de proveedor del servicio de transporte y/o chofer",type:"text",placeholder:"Nombre del proveedor / chofer",group_text:"Información de acompañamiento al producto"},
+    {key:"remision",label:"Remisión, guía de embarque o factura",type:"multi_text",placeholder:"Folio",maxEntries:10,group_text:"Información de acompañamiento al producto"},
+    {key:"cert_calidad",label:"Certificado de calidad",type:"check_bi",group_text:"Información de acompañamiento al producto"},
+    {key:"productos_lista",label:"Producto / No. Lote / Cantidad",type:"producto_list",maxEntries:10,group_text:"Información de acompañamiento al producto",
+    productOptions:[
+      {group:"Consome",items:["Consome 750gr","Consome 530gr","Consome 400gr","Consome 350gr","Consome Pesaj 650gr","Consome 220gr","Consome 130gr","Cubeta 15kg","Cubeta 9kg","Cubeta 4kg"]},
+      {group:"Consome Bajo en Sodio",items:["Consome bajo en sodio 400gr","Consome bajo en sodio 350gr"]},
+      {group:"Salsas",items:["Salsa guajillo 60gr","Salsa morita 60gr","Salsa chipotle 60gr","Salsa adobo 60gr","Salsa pasilla 60gr"]},
+      {group:"Rice",items:["Six pack rice","Caja con 12pz (Rice)"]},
+      {group:"Konjac",items:["Six pack konjac","Caja con 12pz (Konjac)"]},
+    ]},
+    // Transportista — check
+    {key:"tr_higiene",label:"Muestra higiene personal",type:"check",group:"Transportista"},
+    {key:"tr_ropa",label:"Viste ropa limpia",type:"check",group:"Transportista"},
+    // Caja de transporte — check
+    {key:"cj_limpia",label:"Limpia, sin polvo, manchas y/o derrames",type:"check",group:"Caja de Transporte"},
+    {key:"cj_olores",label:"Sin olores extraños",type:"check",group:"Caja de Transporte"},
+    {key:"cj_luz",label:"Sin infiltración de luz en techo y paredes",type:"check",group:"Caja de Transporte"},
+    {key:"cj_plagas",label:"Sin insectos, roedores, aves u otros animales",type:"check",group:"Caja de Transporte"},
+    {key:"cj_fumig",label:"Se cuenta con certificado de fumigación vigente",type:"check",group:"Caja de Transporte"},
+    {key:"cj_ajeno",label:"Unidad libre de material ajeno (cobijas, almohadas, etc.)",type:"check",group:"Caja de Transporte"},
+    {key:"cj_suelo",label:"Producto sin estar en contacto directo con el suelo",type:"check",group:"Caja de Transporte"},
+    {key:"cj_tarimas",label:"Estado de las tarimas o liner entre piso y producto (no rotas, no sucias, sin infestación)",type:"check",group:"Caja de Transporte"},
+    // Productos — check
+    {key:"pr_empaque",label:"Empaque (sellado y sin rasgaduras)",type:"check",group:"Productos"},
+    {key:"pr_faltante",label:"Sin faltante",type:"check",group:"Productos"},
+  ]},
 };
 const FORM_KEYS=Object.keys(AREA_FORMS);
-const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚"};
-const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa"};
+const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚",transporte:"🚛"};
+const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa",transporte:"#34d399"};
 const getInspector=id=>INSPECTORES.find(i=>i.id===id)||{name:id,puesto:""};
 const FORMS_KEY="inspectpro-local-v1";
 // Per-form storage keys
@@ -100,6 +132,7 @@ const FORM_STORAGE_KEYS={
   alm1_mp:"ip-alm1-mp",
   alm2_mp:"ip-alm2-mp",
   recepcion:"ip-recepcion",
+  transporte:"ip-transporte",
 };
 function loadAllRecords(){
   const all=[];
@@ -148,23 +181,41 @@ function initValues(fk){
   (AREA_FORMS[fk]?.fields||[]).forEach(f=>{
     if(f.type==="check") v[f.key+"_check"]=null;
     else if(f.type==="check_with_input"){v[f.key+"_check"]=null;v[f.key+"_val"]="";}
-    else v[f.key]="";
+    else if(f.type==="check_bi") v[f.key+"_check"]=null; // solo SI cumple / NO cumple
+    else if(f.type==="multi_text") v[f.key]=[""]; // array of entries
+    else if(f.type==="producto_list") v[f.key]=[{producto:"",lote:"",cantidad:""}]; // linked rows
+    else v[f.key]=""; // text, date, group_text
   });
   return v;
 }
 function calcScore(fields,values){
-  const cf=fields.filter(f=>f.type==="check"||f.type==="check_with_input");
+  const cf=fields.filter(f=>f.type==="check"||f.type==="check_with_input"||f.type==="check_bi");
   if(!cf.length) return null;
   return{pass:cf.filter(f=>values[f.key+"_check"]===true).length,fail:cf.filter(f=>values[f.key+"_check"]===false).length,na:cf.filter(f=>values[f.key+"_check"]==="na").length,total:cf.length};
 }
 function getGroups(flds){
   const g={};
-  flds.filter(f=>f.type==="check"||f.type==="check_with_input").forEach(f=>{
+  flds.filter(f=>f.type==="check"||f.type==="check_with_input"||f.type==="check_bi").forEach(f=>{
     const gn=f.group||"Lista de verificación";
     if(!g[gn]) g[gn]=[];
     g[gn].push(f);
   });
   return g;
+}
+// Get text fields for a form (including group_text fields)
+function getTextFields(flds){
+  return flds.filter(f=>f.type==="text"||f.type==="date");
+}
+// Get group_text label fields (info blocks with text inputs)
+function getTextGroups(flds){
+  const seen=new Set();
+  const groups={};
+  flds.filter(f=>f.group_text).forEach(f=>{
+    const g=f.group_text;
+    if(!groups[g]) groups[g]=[];
+    groups[g].push(f);
+  });
+  return groups;
 }
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────
@@ -172,17 +223,59 @@ function exportPDF(record){
   const fmtVal=v=>v===true?"CUMPLE":v==="na"?"N/A":v===false?"NO CUMPLE":"—";
   const colVal=v=>v===true?"#166534":v==="na"?"#3730a3":v===false?"#991b1b":"#666";
   const bgVal=v=>v===true?"#f0fdf4":v==="na"?"#eef2ff":v===false?"#fef2f2":"#f9f9f9";
-  const textFs=(record.fields||[]).filter(f=>f.type==="text"||f.type==="date");
-  const checkFs=(record.fields||[]).filter(f=>f.type==="check"||f.type==="check_with_input");
-  const groups={};
-  checkFs.forEach(f=>{const g=f.group||"Lista de verificación";if(!groups[g])groups[g]=[];groups[g].push(f);});
+
+  const allFields=record.fields||[];
+  const textFs=allFields.filter(f=>(f.type==="text"||f.type==="date")&&!f.group_text);
+  const textGrps={}; allFields.filter(f=>f.group_text).forEach(f=>{const g=f.group_text;if(!textGrps[g])textGrps[g]=[];textGrps[g].push(f);});
+  const checkFs=allFields.filter(f=>f.type==="check"||f.type==="check_with_input"||f.type==="check_bi");
+  const checkGroups={}; checkFs.filter(f=>f.group).forEach(f=>{const g=f.group;if(!checkGroups[g])checkGroups[g]=[];checkGroups[g].push(f);});
+
   const app=record.score?record.score.total-(record.score.na||0):0;
   const pct=record.score?(app===0?100:Math.round((record.score.pass/app)*100)):null;
   const sc=pct===null?"#6366f1":pct>=80?"#16a34a":pct>=50?"#d97706":"#dc2626";
   const sl=pct===null?"REGISTRADO":pct>=80?"APROBADO":pct>=50?"OBSERVACIONES":"REPROBADO";
+
   const textRows=textFs.map(f=>`<tr><td style="padding:5px 8px;font-size:11px;color:#555;width:40%;border-bottom:1px solid #eee">${f.label}</td><td style="padding:5px 8px;font-size:11px;font-weight:600;border-bottom:1px solid #eee">${record.values[f.key]||"—"}</td></tr>`).join("");
-  const groupSections=Object.entries(groups).map(([gn,gf])=>`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">${gn}</div>${gf.map((f,i)=>{const val=record.values[f.key+"_check"];const ival=record.values[f.key+"_val"];return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:${bgVal(val)};border-bottom:1px solid #e5e7eb"><span style="font-size:10.5px;flex:1;padding-right:8px"><span style="color:#bbb;margin-right:4px">${i+1}.</span>${f.label}${f.type==="check_with_input"&&ival?` <b style="color:#d97706">(${ival}${f.inputType!=="date"?" °C":""})</b>`:""}</span><span style="font-size:9px;font-weight:700;color:${colVal(val)};white-space:nowrap;border:1px solid ${colVal(val)};border-radius:3px;padding:2px 6px">${fmtVal(val)}</span></div>`;}).join("")}</div>`).join("");
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Inspeccion_${record.area}_${record.fecha}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:20px;color:#111;background:#fff}@media print{body{padding:0}@page{margin:12mm}.no-print{display:none!important}}table{width:100%;border-collapse:collapse}.no-print{text-align:center;margin-bottom:16px}.no-print button{background:#1e3a5f;color:#60a5fa;border:none;border-radius:5px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:700}</style></head><body><div class="no-print"><button onclick="window.print()">🖨️ Guardar como PDF / Imprimir</button></div><div style="background:#1a1a1a;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:14px;border-left:4px solid #f59e0b"><div style="font-size:9px;letter-spacing:3px;color:#f59e0b;margin-bottom:3px">⬡ INSPECTPRO</div><div style="font-size:15px;font-weight:700;margin-bottom:2px">${record.title}</div><div style="font-size:11px;color:#aaa">${record.area}</div></div><div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"><div style="background:#f9f9f9;border:1px solid #eee;border-radius:5px;padding:8px 12px;flex:1;min-width:120px"><div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:2px">Inspector</div><div style="font-size:13px;font-weight:600">${record.inspector}</div></div><div style="background:#f9f9f9;border:1px solid #eee;border-radius:5px;padding:8px 12px;flex:1;min-width:120px"><div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:2px">Fecha</div><div style="font-size:13px;font-weight:600">${record.fecha}</div></div>${record.score?`<div style="background:${sc}15;border:1px solid ${sc}55;border-radius:5px;padding:8px 12px;flex:1;min-width:120px;text-align:center"><div style="font-size:20px;font-weight:700;color:${sc}">${pct}%</div><div style="font-size:9px;font-weight:700;color:${sc}">${sl}</div><div style="font-size:9px;color:#666;margin-top:3px">✓${record.score.pass} ✗${record.score.fail} —${record.score.na||0}</div></div>`:""}</div>${textFs.length?`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">Datos generales</div><table style="border:1px solid #eee;border-top:none"><tbody>${textRows}</tbody></table></div>`:""}${groupSections}${record.notas?`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">Observaciones</div><div style="border:1px solid #eee;border-top:none;padding:10px;font-size:11px;color:#444;line-height:1.6">${record.notas}</div></div>`:""}<div style="margin-top:28px;display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid #ddd"><div style="text-align:center;width:42%"><div style="height:30px"></div><div style="border-top:1px solid #333;padding-top:5px;font-size:9px;color:#777">Firma del Inspector — ${record.inspector}</div></div><div style="text-align:center;width:42%"><div style="height:30px"></div><div style="border-top:1px solid #333;padding-top:5px;font-size:9px;color:#777">Firma de Autorización</div></div></div></body></html>`;
+
+  // Render group_text sections for PDF
+  const textGroupSections=Object.entries(textGrps).map(([gn,gf])=>`
+    <div style="margin-bottom:14px">
+      <div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">${gn}</div>
+      <div style="border:1px solid #eee;border-top:none;padding:10px">
+        ${gf.map(f=>{
+          if(f.type==="check_bi"){
+            const v=record.values[f.key+"_check"];
+            return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:3px">${f.label}</div><span style="background:${v===true?"#f0fdf4":"#fef2f2"};color:${v===true?"#166534":"#991b1b"};border:1px solid ${v===true?"#166534":"#991b1b"};border-radius:3px;padding:2px 8px;font-size:9px;font-weight:700">${v===true?"✓ SÍ CUMPLE":"✗ NO CUMPLE"}</span></div>`;
+          }
+          if(f.type==="multi_text"){
+            const entries=Array.isArray(record.values[f.key])?record.values[f.key].filter(v=>v!==""):[];
+            return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:3px">${f.label}</div>${entries.length===0?"<span style='font-size:11px;color:#999'>—</span>":entries.map((e,i)=>`<div style="font-size:11px;padding:2px 0;border-bottom:1px solid #f5f5f5">${i+1}. ${e}</div>`).join("")}</div>`;
+          }
+          if(f.type==="produto_list"||f.type==="producto_list"){
+            const rows=Array.isArray(record.values[f.key])?record.values[f.key].filter(r=>r.producto!==""):[];
+            return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:4px">${f.label}</div>${rows.length===0?"<span style='font-size:11px;color:#999'>—</span>":`<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Producto</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">No. Lote</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Cantidad</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5">${r.producto||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.lote||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.cantidad||"—"}</td></tr>`).join("")}</tbody></table>`}</div>`;
+          }
+          return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:2px">${f.label}</div><div style="font-size:11px;font-weight:600">${record.values[f.key]||"—"}</div></div>`;
+        }).join("")}
+      </div>
+    </div>`).join("");
+
+  const groupSections=Object.entries(checkGroups).map(([gn,gf])=>`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">${gn}</div>${gf.map((f,i)=>{const val=record.values[f.key+"_check"];const ival=record.values[f.key+"_val"];return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:${bgVal(val)};border-bottom:1px solid #e5e7eb"><span style="font-size:10.5px;flex:1;padding-right:8px"><span style="color:#bbb;margin-right:4px">${i+1}.</span>${f.label}${f.type==="check_with_input"&&ival?` <b style="color:#d97706">(${ival}${f.inputType!=="date"?" °C":""})</b>`:""}</span><span style="font-size:9px;font-weight:700;color:${colVal(val)};white-space:nowrap;border:1px solid ${colVal(val)};border-radius:3px;padding:2px 6px">${fmtVal(val)}</span></div>`;}).join("")}</div>`).join("");
+
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Inspeccion_${record.area}_${record.fecha}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:20px;color:#111;background:#fff}@media print{body{padding:0}@page{margin:12mm}.no-print{display:none!important}}table{width:100%;border-collapse:collapse}.no-print{text-align:center;margin-bottom:16px}.no-print button{background:#1e3a5f;color:#60a5fa;border:none;border-radius:5px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:700}</style></head><body>
+  <div class="no-print"><button onclick="window.print()">🖨️ Guardar como PDF / Imprimir</button></div>
+  <div style="background:#1a1a1a;color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:14px;border-left:4px solid #f59e0b"><div style="font-size:9px;letter-spacing:3px;color:#f59e0b;margin-bottom:3px">⬡ INSPECTPRO</div><div style="font-size:15px;font-weight:700;margin-bottom:2px">${record.title}</div><div style="font-size:11px;color:#aaa">${record.area}</div></div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="background:#f9f9f9;border:1px solid #eee;border-radius:5px;padding:8px 12px;flex:1;min-width:120px"><div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:2px">Inspector</div><div style="font-size:13px;font-weight:600">${record.inspector}</div>${record.inspectorPuesto?`<div style="font-size:10px;color:#60a5fa">${record.inspectorPuesto}</div>`:""}</div>
+    <div style="background:#f9f9f9;border:1px solid #eee;border-radius:5px;padding:8px 12px;flex:1;min-width:120px"><div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:2px">Fecha</div><div style="font-size:13px;font-weight:600">${record.fecha}</div></div>
+    ${record.score?`<div style="background:${sc}15;border:1px solid ${sc}55;border-radius:5px;padding:8px 12px;flex:1;min-width:120px;text-align:center"><div style="font-size:20px;font-weight:700;color:${sc}">${pct}%</div><div style="font-size:9px;font-weight:700;color:${sc}">${sl}</div><div style="font-size:9px;color:#666;margin-top:3px">✓${record.score.pass} ✗${record.score.fail} —${record.score.na||0}</div></div>`:""}
+  </div>
+  ${textFs.length?`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">Datos generales</div><table style="border:1px solid #eee;border-top:none"><tbody>${textRows}</tbody></table></div>`:""}
+  ${textGroupSections}
+  ${groupSections}
+  ${record.notas?`<div style="margin-bottom:14px"><div style="background:#1a1a1a;color:#f59e0b;padding:5px 10px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:4px 4px 0 0">Observaciones</div><div style="border:1px solid #eee;border-top:none;padding:10px;font-size:11px;color:#444;line-height:1.6">${record.notas}</div></div>`:""}
+  <div style="margin-top:28px;display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid #ddd"><div style="text-align:center;width:42%"><div style="height:30px"></div><div style="border-top:1px solid #333;padding-top:5px;font-size:9px;color:#777">Firma del Inspector — ${record.inspector}</div></div><div style="text-align:center;width:42%"><div style="height:30px"></div><div style="border-top:1px solid #333;padding-top:5px;font-size:9px;color:#777">Firma de Autorización</div></div></div>
+  </body></html>`;
   const blob=new Blob([html],{type:"text/html"});
   const url=URL.createObjectURL(blob);
   const win=window.open(url,"_blank");
@@ -623,10 +716,16 @@ function App(){
   const setV=(k,v)=>setVals(prev=>({...prev,[k]:v}));
   const fd=AREA_FORMS[fk];
   const fields=fd?.fields||[];
-  const checkFs=fields.filter(f=>f.type==="check"||f.type==="check_with_input");
-  const textFs=fields.filter(f=>f.type==="text"||f.type==="date");
+  const checkFs=fields.filter(f=>f.type==="check"||f.type==="check_with_input"||f.type==="check_bi");
+  const textFs=fields.filter(f=>(f.type==="text"||f.type==="date")&&!f.group_text);
+  const textGroupFs=getTextGroups(fields);
   const allCk=checkFs.every(f=>vals[f.key+"_check"]!==null);
-  const allTx=textFs.every(f=>vals[f.key]!=="");
+  const allTx=textFs.every(f=>vals[f.key]!=="")&&
+    Object.values(textGroupFs).flat().filter(f=>f.type!=="check_bi").every(f=>{
+      if(f.type==="multi_text") return Array.isArray(vals[f.key])&&vals[f.key].some(v=>v!=="");
+      if(f.type==="producto_list") return Array.isArray(vals[f.key])&&vals[f.key].some(r=>r.producto!=="");
+      return vals[f.key]!=="";
+    });
   const allOk=allCk&&allTx;
   const score=calcScore(fields,vals);
 
@@ -793,6 +892,84 @@ function App(){
                 h("input",{type:f.type==="date"?"date":"text",style:S.inp,value:vals[f.key]||"",placeholder:f.placeholder||"",onChange:e=>setV(f.key,e.target.value)})
               )))
             ),
+            // group_text sections (e.g. Información de acompañamiento)
+            ...Object.entries(textGroupFs).map(([gn,gf])=>h("div",{key:gn,style:S.card},
+              h("div",{style:S.secTit},gn),
+              h("div",null,...gf.map(f=>{
+                if(f.type==="check_bi"){
+                  const v=vals[f.key+"_check"];
+                  return h("div",{key:f.key,style:{marginBottom:14}},
+                    h("label",{style:S.lbl},f.label),
+                    h("div",{style:{display:"flex",gap:8,marginTop:4}},
+                      h("button",{style:S.cbtn(v===true?"#0f0f0f":"#22c55e",v===true?"#22c55e":"#1a2e1a"),onClick:()=>setV(f.key+"_check",true)},"✓ SÍ cumple"),
+                      h("button",{style:S.cbtn(v===false?"#0f0f0f":"#ef4444",v===false?"#ef4444":"#2a1010"),onClick:()=>setV(f.key+"_check",false)},"✗ NO cumple")
+                    )
+                  );
+                }
+                if(f.type==="multi_text"){
+                  const entries=Array.isArray(vals[f.key])?vals[f.key]:[""];
+                  return h("div",{key:f.key,style:{marginBottom:14}},
+                    h("label",{style:S.lbl},f.label+" ("+entries.length+"/"+f.maxEntries+")"),
+                    ...entries.map((entry,idx)=>h("div",{key:idx,style:{display:"flex",gap:6,marginBottom:6,alignItems:"center"}},
+                      h("input",{type:"text",style:{...S.inp,flex:1},value:entry,placeholder:(f.placeholder||"Folio")+" "+(idx+1),
+                        onChange:e=>{const arr=[...entries];arr[idx]=e.target.value;setV(f.key,arr);}
+                      }),
+                      entries.length>1&&h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"6px 10px",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0},
+                        onClick:()=>setV(f.key,entries.filter((_,i)=>i!==idx))
+                      },"✕")
+                    )),
+                    entries.length<(f.maxEntries||10)&&h("button",{
+                      style:{background:"#0a1628",color:"#60a5fa",border:"1px solid #1e3a5f",borderRadius:4,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,marginTop:2},
+                      onClick:()=>setV(f.key,[...entries,""])
+                    },"+ Agregar remisión")
+                  );
+                }
+                if(f.type==="producto_list"){
+                  const rows=Array.isArray(vals[f.key])?vals[f.key]:[{producto:"",lote:"",cantidad:""}];
+                  const opts=f.productOptions||[];
+                  return h("div",{key:f.key,style:{marginBottom:14}},
+                    h("label",{style:S.lbl},"Productos ("+rows.length+"/"+f.maxEntries+")"),
+                    h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 32px",gap:6,marginBottom:4}},
+                      h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Producto"),
+                      h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"No. Lote"),
+                      h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Cantidad"),
+                      h("span",null,"")
+                    ),
+                    ...rows.map((row,idx)=>h("div",{key:idx,style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 32px",gap:6,marginBottom:6,alignItems:"center"}},
+                      opts.length>0
+                        ? h("select",{style:{...S.sel,fontSize:11},value:row.producto||"",
+                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value};setV(f.key,arr);}},
+                            h("option",{value:""},"— Seleccionar producto —"),
+                            ...opts.map(g=>h("optgroup",{key:g.group,label:"── "+g.group+" ──"},
+                              ...g.items.map(item=>h("option",{key:item,value:item},item))
+                            ))
+                          )
+                        : h("input",{type:"text",style:S.inp,value:row.producto||"",placeholder:"Producto "+(idx+1),
+                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value};setV(f.key,arr);}
+                          }),
+                      h("input",{type:"text",style:S.inp,value:row.lote||"",placeholder:"Lote",
+                        onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],lote:e.target.value};setV(f.key,arr);}
+                      }),
+                      h("input",{type:"text",style:S.inp,value:row.cantidad||"",placeholder:"Cant.",
+                        onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],cantidad:e.target.value};setV(f.key,arr);}
+                      }),
+                      rows.length>1?h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"4px 8px",cursor:"pointer",fontSize:12,fontWeight:700},
+                        onClick:()=>setV(f.key,rows.filter((_,i)=>i!==idx))
+                      },"✕"):h("div",null)
+                    )),
+                    rows.length<(f.maxEntries||10)&&h("button",{
+                      style:{background:"#0a1628",color:"#60a5fa",border:"1px solid #1e3a5f",borderRadius:4,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,marginTop:2},
+                      onClick:()=>setV(f.key,[...rows,{producto:"",lote:"",cantidad:""}])
+                    },"+ Agregar producto")
+                  );
+                }
+                // Default: text or date
+                return h("div",{key:f.key,style:{marginBottom:14}},
+                  h("label",{style:S.lbl},f.label),
+                  h("input",{type:f.type==="date"?"date":"text",style:S.inp,value:vals[f.key]||"",placeholder:f.placeholder||"",onChange:e=>setV(f.key,e.target.value)})
+                );
+              }))
+            )),
             // Mandatory groups
             ...Object.entries(mandatoryGroups).map(([gn,gf])=>h("div",{key:gn,style:S.card},
               h("div",{style:S.grpHdr},
@@ -805,9 +982,9 @@ function App(){
                   h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:6}},
                     h("span",{style:{fontSize:12,flex:1,minWidth:120,paddingRight:6}},h("span",{style:{color:"#555",marginRight:4}},`${i+1}.`),f.label),
                     h("div",{style:S.btnGrp},
-                      h("button",{style:S.cbtn(v===true?"#0f0f0f":"#22c55e",v===true?"#22c55e":"#1a2e1a"),onClick:()=>setV(f.key+"_check",true)},"✓ SÍ"),
-                      h("button",{style:S.cbtn(v===false?"#0f0f0f":"#ef4444",v===false?"#ef4444":"#2a1010"),onClick:()=>setV(f.key+"_check",false)},"✗ NO"),
-                      h("button",{style:S.cbtn(v==="na"?"#0f0f0f":"#818cf8",v==="na"?"#818cf8":"#1a1a2e"),onClick:()=>setV(f.key+"_check","na")},"— N/A")
+                      h("button",{style:S.cbtn(v===true?"#0f0f0f":"#22c55e",v===true?"#22c55e":"#1a2e1a"),onClick:()=>setV(f.key+"_check",true)},f.type==="check_bi"?"✓ SÍ cumple":"✓ SÍ"),
+                      h("button",{style:S.cbtn(v===false?"#0f0f0f":"#ef4444",v===false?"#ef4444":"#2a1010"),onClick:()=>setV(f.key+"_check",false)},f.type==="check_bi"?"✗ NO cumple":"✗ NO"),
+                      f.type!=="check_bi"&&h("button",{style:S.cbtn(v==="na"?"#0f0f0f":"#818cf8",v==="na"?"#818cf8":"#1a1a2e"),onClick:()=>setV(f.key+"_check","na")},"— N/A")
                     )
                   ),
                   f.type==="check_with_input"&&h("div",{style:{marginTop:6,display:"flex",alignItems:"center",gap:7}},
@@ -920,11 +1097,56 @@ function App(){
 
     // DETAIL
     if(formView==="detail"&&sel){
-      const scf=sel.fields.filter(f=>f.type==="check"||f.type==="check_with_input");
-      const stf=sel.fields.filter(f=>f.type==="text"||f.type==="date");
+      const scf=sel.fields.filter(f=>f.type==="check"||f.type==="check_with_input"||f.type==="check_bi");
+      const stf=sel.fields.filter(f=>(f.type==="text"||f.type==="date")&&!f.group_text);
+      const stGroupFs=getTextGroups(sel.fields);
       const ac=FORM_COLORS[sel.formKey]||"#f59e0b";
       const dg={};
-      scf.forEach(f=>{const g=f.group||"Lista de verificación";if(!dg[g])dg[g]=[];dg[g].push(f);});
+      scf.filter(f=>f.group).forEach(f=>{const g=f.group||"Lista de verificación";if(!dg[g])dg[g]=[];dg[g].push(f);});
+
+      function renderDetailField(f){
+        if(f.type==="check_bi"){
+          const v=sel.values[f.key+"_check"];
+          return h("div",{key:f.key,style:{marginBottom:12}},
+            h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginBottom:4}},f.label),
+            h("span",{style:{background:v===true?"#052e16":"#2d0a0a",color:v===true?"#22c55e":"#ef4444",border:`1px solid ${v===true?"#166534":"#991b1b"}`,borderRadius:4,padding:"3px 10px",fontSize:10,fontWeight:700}},
+              v===true?"✓ SÍ CUMPLE":"✗ NO CUMPLE"
+            )
+          );
+        }
+        if(f.type==="multi_text"){
+          const entries=Array.isArray(sel.values[f.key])?sel.values[f.key].filter(v=>v!==""):[];
+          return h("div",{key:f.key,style:{marginBottom:12}},
+            h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginBottom:4}},f.label),
+            entries.length===0?h("div",{style:{fontSize:12,color:"#444"}},"—"):
+            entries.map((e,i)=>h("div",{key:i,style:{fontSize:12,padding:"4px 0",borderBottom:"1px solid #1a1a1a"}},`${i+1}. ${e}`))
+          );
+        }
+        if(f.type==="producto_list"){
+          const rows=Array.isArray(sel.values[f.key])?sel.values[f.key].filter(r=>r.producto!==""):[];
+          return h("div",{key:f.key,style:{marginBottom:12}},
+            h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginBottom:6}},f.label),
+            rows.length===0?h("div",{style:{fontSize:12,color:"#444"}},"—"):h("div",null,
+              h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:6,marginBottom:4,borderBottom:"1px solid #2a2a2a",paddingBottom:4}},
+                h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Producto"),
+                h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"No. Lote"),
+                h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Cantidad")
+              ),
+              ...rows.map((r,i)=>h("div",{key:i,style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:6,padding:"5px 0",borderBottom:"1px solid #1a1a1a"}},
+                h("span",{style:{fontSize:12}},r.producto||"—"),
+                h("span",{style:{fontSize:12,color:"#aaa"}},r.lote||"—"),
+                h("span",{style:{fontSize:12,color:"#aaa"}},r.cantidad||"—")
+              ))
+            )
+          );
+        }
+        // default text/date
+        return h("div",{key:f.key,style:{marginBottom:12}},
+          h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginBottom:2}},f.label),
+          h("div",{style:{fontSize:12}},sel.values[f.key]||"—")
+        );
+      }
+
       return h("div",{style:S.app},
         h("div",{style:S.hdr},
           h("div",null,h("div",{style:S.logo},"⬡ INSPECTPRO"),h("div",{style:S.sub},"Detalle del registro")),
@@ -941,7 +1163,7 @@ function App(){
                 h("span",{style:{background:ac+"22",color:ac,border:`1px solid ${ac}44`,borderRadius:4,padding:"2px 8px",fontSize:9,fontWeight:700,display:"inline-block",marginBottom:5}},sel.area),
                 h("div",{style:{fontSize:13,fontWeight:700,marginBottom:3}},sel.title),
                 h("div",{style:{fontSize:13,fontWeight:700}},sel.inspector),
-              h("div",{style:{fontSize:11,color:"#60a5fa"}},sel.inspectorPuesto||"Inspector"),
+                h("div",{style:{fontSize:11,color:"#60a5fa"}},sel.inspectorPuesto||"Inspector"),
                 h("div",{style:{fontSize:10,color:"#666"}},`${fmtDate(sel.createdAt)} · Fecha: ${sel.fecha}`)
               ),
               h(StatusBadge,{score:sel.score})
@@ -953,6 +1175,7 @@ function App(){
               h("span",{style:{color:"#666",fontSize:11}},`Total: ${sel.score.total}`)
             )
           ),
+          // Regular text fields (no group_text)
           stf.length>0&&h("div",{style:S.card},
             h("div",{style:S.secTit},"Información registrada"),
             h("div",{style:S.g2},...stf.map(f=>h("div",{key:f.key,style:{marginBottom:11}},
@@ -960,6 +1183,11 @@ function App(){
               h("div",{style:{fontSize:12}},sel.values[f.key]||"—")
             )))
           ),
+          // group_text sections
+          ...Object.entries(stGroupFs).map(([gn,gf])=>h("div",{key:gn,style:S.card},
+            h("div",{style:S.secTit},gn),
+            ...gf.map(f=>renderDetailField(f))
+          )),
           ...Object.entries(dg).map(([gn,gf])=>h("div",{key:gn,style:S.card},
             h("div",{style:{...S.grpHdr,marginBottom:10}},h("span",{style:{fontSize:11,fontWeight:700,color:"#f59e0b"}},gn)),
             ...gf.map((f,i)=>{
