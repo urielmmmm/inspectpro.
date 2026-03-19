@@ -87,6 +87,26 @@ const AREA_FORMS={
   alm1_mp:{area:"Almacén 1",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   alm2_mp:{area:"Almacén 2",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   recepcion:{area:"Recepción",title:"Recepción de Materias Primas",fields:RECEPCION_FIELDS},
+  bobinas:{area:"Recepción",title:"Registro Inspección Recibo de Bobinas",fields:[
+    {key:"proveedor",label:"Proveedor",type:"text",placeholder:"Nombre del proveedor"},
+    {key:"producto",label:"Producto",type:"text",placeholder:"Descripción del producto"},
+    {key:"cfdi",label:"CFDI y/o Remisión",type:"text",placeholder:"Folio"},
+    {key:"fecha_arribo",label:"Fecha de arribo",type:"date"},
+    {key:"no_lote",label:"No. de Lote",type:"text",placeholder:"Número de lote"},
+    {key:"cantidad",label:"Cantidad (piezas)",type:"text",placeholder:"Piezas"},
+    {key:"cant_muestrear",label:"Cantidad a muestrear (piezas)",type:"text",placeholder:"Piezas"},
+    {key:"tr_higiene",label:"Muestra higiene personal",type:"check",group:"Transportista"},
+    {key:"tr_ropa",label:"Viste ropa limpia",type:"check",group:"Transportista"},
+    {key:"cj_olores",label:"Sin olores extraños",type:"check",group:"Caja de Transporte"},
+    {key:"cj_luz",label:"Sin infiltración de luz en techo y paredes",type:"check",group:"Caja de Transporte"},
+    {key:"cj_plagas",label:"Sin insectos, roedores, aves u otros animales",type:"check",group:"Caja de Transporte"},
+    {key:"cj_suelo",label:"Producto sin estar en contacto directo con el suelo",type:"check",group:"Caja de Transporte"},
+    {key:"bob_ancho",label:"Ancho 140 mm ± 3",type:"check",group:"Bobina"},
+    {key:"bob_largo",label:"Largo 120 mm ± 3",type:"check",group:"Bobina"},
+    {key:"bob_foto",label:"Fotocelda 5 x 5 mm ± 3",type:"check",group:"Bobina"},
+    {key:"bob_core",label:"Core 7.62 ± 3 mm",type:"check",group:"Bobina"},
+    {key:"bob_calibre",label:"Calibre 70µ ± 7.4",type:"check",group:"Bobina"},
+  ]},
   transporte:{area:"Logística",title:"Registro Evaluación de Unidad de Transporte de Producto Terminado",fields:[
     // Información de acompañamiento al producto — texto
     {key:"no_pedido",label:"No. de Pedido",type:"multi_text",placeholder:"Número de pedido",maxEntries:10,group_text:"Información de acompañamiento al producto"},
@@ -121,8 +141,8 @@ const AREA_FORMS={
   ]},
 };
 const FORM_KEYS=Object.keys(AREA_FORMS);
-const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚",transporte:"🚛"};
-const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa",transporte:"#34d399"};
+const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚",bobinas:"🎞️",transporte:"🚛"};
+const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa",bobinas:"#fb923c",transporte:"#34d399"};
 const getInspector=id=>INSPECTORES.find(i=>i.id===id)||{name:id,puesto:""};
 const FORMS_KEY="inspectpro-local-v1";
 // Per-form storage keys
@@ -132,6 +152,7 @@ const FORM_STORAGE_KEYS={
   alm1_mp:"ip-alm1-mp",
   alm2_mp:"ip-alm2-mp",
   recepcion:"ip-recepcion",
+  bobinas:"ip-bobinas",
   transporte:"ip-transporte",
 };
 function loadAllRecords(){
@@ -253,7 +274,7 @@ function exportPDF(record){
           }
           if(f.type==="produto_list"||f.type==="producto_list"){
             const rows=Array.isArray(record.values[f.key])?record.values[f.key].filter(r=>r.producto!==""):[];
-            return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:4px">${f.label}</div>${rows.length===0?"<span style='font-size:11px;color:#999'>—</span>":`<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Producto</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">No. Lote</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Cantidad</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5">${r.producto||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.lote||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.cantidad||"—"}</td></tr>`).join("")}</tbody></table>`}</div>`;
+            return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:4px">${f.label}</div>${rows.length===0?"<span style='font-size:11px;color:#999'>—</span>":`<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Producto</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">No. Lote</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Piezas</th><th style="text-align:left;padding:4px 6px;background:#f9f9f9;border-bottom:1px solid #eee;font-size:9px;color:#888">Cajas / Tarimas</th></tr></thead><tbody>${rows.map(r=>{const c=calcCajas(r.producto,r.cantidad);const cs=fmtCajas(c);return`<tr><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5">${r.producto||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.lote||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#666">${r.cantidad||"—"}</td><td style="padding:4px 6px;border-bottom:1px solid #f5f5f5;color:#1d4ed8;font-weight:600">${cs||"—"}</td></tr>`;}).join("")}</tbody></table>`}</div>`;
           }
           return `<div style="margin-bottom:8px"><div style="font-size:9px;color:#666;text-transform:uppercase;margin-bottom:2px">${f.label}</div><div style="font-size:11px;font-weight:600">${record.values[f.key]||"—"}</div></div>`;
         }).join("")}
@@ -281,6 +302,55 @@ function exportPDF(record){
   const win=window.open(url,"_blank");
   if(!win){const a=document.createElement("a");a.href=url;a.download=`Inspeccion_${record.area}_${record.fecha}.html`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
   setTimeout(()=>URL.revokeObjectURL(url),8000);
+}
+
+
+// ─── CALCULADORA DE CAJAS ─────────────────────────────────────────────────────
+function calcCajas(producto, piezas){
+  if(!producto || !piezas || isNaN(parseInt(piezas))) return null;
+  const pz = parseInt(piezas);
+  const p = producto.toLowerCase();
+  
+  // Six pack - calcula tarimas
+  if(p.includes('six pack')){
+    const tarimas = Math.floor(pz / 126);
+    const sueltas = pz % 126;
+    return { tipo:'tarimas', completas:tarimas, sueltas };
+  }
+  // Cubetas - manual
+  if(p.includes('cubeta')) return null;
+  
+  // 750gr
+  if(p.includes('750')) return { tipo:'cajas', div:16, completas:Math.floor(pz/16), sueltas:pz%16 };
+  // 530gr
+  if(p.includes('530')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  // 400gr (consome o bajo en sodio)
+  if(p.includes('400')) return { tipo:'cajas', div:24, completas:Math.floor(pz/24), sueltas:pz%24 };
+  // 350gr (consome o bajo en sodio)
+  if(p.includes('350')) return { tipo:'cajas', div:18, completas:Math.floor(pz/18), sueltas:pz%18 };
+  // 220gr
+  if(p.includes('220')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  // 130gr
+  if(p.includes('130')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  // Pesaj 650gr — no tiene fórmula definida, manual
+  if(p.includes('pesaj')) return null;
+  // Salsas
+  if(p.includes('salsa')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  // Rice caja 12pz
+  if(p.includes('rice') && p.includes('12')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  // Konjac caja 12pz
+  if(p.includes('konjac') && p.includes('12')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
+  
+  return null;
+}
+
+function fmtCajas(resultado){
+  if(!resultado) return null;
+  const {tipo, completas, sueltas} = resultado;
+  if(tipo === 'tarimas'){
+    return sueltas > 0 ? completas+" tarimas + "+sueltas+" pz sueltas" : completas+" tarimas completas";
+  }
+  return sueltas > 0 ? completas+" cajas + "+sueltas+" pz sueltas" : completas+" cajas completas";
 }
 
 // ─── ESTILOS COMUNES ──────────────────────────────────────────────────────────
@@ -932,31 +1002,48 @@ function App(){
                     h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 32px",gap:6,marginBottom:4}},
                       h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Producto"),
                       h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"No. Lote"),
-                      h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Cantidad"),
+                      h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Piezas"),
                       h("span",null,"")
                     ),
-                    ...rows.map((row,idx)=>h("div",{key:idx,style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 32px",gap:6,marginBottom:6,alignItems:"center"}},
-                      opts.length>0
-                        ? h("select",{style:{...S.sel,fontSize:11},value:row.producto||"",
-                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value};setV(f.key,arr);}},
-                            h("option",{value:""},"— Seleccionar producto —"),
-                            ...opts.map(g=>h("optgroup",{key:g.group,label:"── "+g.group+" ──"},
-                              ...g.items.map(item=>h("option",{key:item,value:item},item))
-                            ))
-                          )
-                        : h("input",{type:"text",style:S.inp,value:row.producto||"",placeholder:"Producto "+(idx+1),
-                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value};setV(f.key,arr);}
+                    ...rows.map((row,idx)=>{
+                      const cajas = calcCajas(row.producto, row.cantidad);
+                      const cajasStr = fmtCajas(cajas);
+                      const esCubeta = row.producto && row.producto.toLowerCase().includes('cubeta');
+                      return h("div",{key:idx,style:{marginBottom:8}},
+                        h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 32px",gap:6,alignItems:"center"}},
+                          opts.length>0
+                            ? h("select",{style:{...S.sel,fontSize:11},value:row.producto||"",
+                                onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value,cantidad:""};setV(f.key,arr);}},
+                                h("option",{value:""},"— Seleccionar —"),
+                                ...opts.map(g=>h("optgroup",{key:g.group,label:"── "+g.group+" ──"},
+                                  ...g.items.map(item=>h("option",{key:item,value:item},item))
+                                ))
+                              )
+                            : h("input",{type:"text",style:S.inp,value:row.producto||"",placeholder:"Producto "+(idx+1),
+                                onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],producto:e.target.value};setV(f.key,arr);}
+                              }),
+                          h("input",{type:"text",style:S.inp,value:row.lote||"",placeholder:"Lote",
+                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],lote:e.target.value};setV(f.key,arr);}
                           }),
-                      h("input",{type:"text",style:S.inp,value:row.lote||"",placeholder:"Lote",
-                        onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],lote:e.target.value};setV(f.key,arr);}
-                      }),
-                      h("input",{type:"text",style:S.inp,value:row.cantidad||"",placeholder:"Cant.",
-                        onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],cantidad:e.target.value};setV(f.key,arr);}
-                      }),
-                      rows.length>1?h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"4px 8px",cursor:"pointer",fontSize:12,fontWeight:700},
-                        onClick:()=>setV(f.key,rows.filter((_,i)=>i!==idx))
-                      },"✕"):h("div",null)
-                    )),
+                          h("input",{type:"text",style:{...S.inp,placeholder:"pz"},value:row.cantidad||"",
+                            placeholder:esCubeta?"manual":"pz",
+                            onChange:e=>{const arr=[...rows];arr[idx]={...arr[idx],cantidad:e.target.value};setV(f.key,arr);}
+                          }),
+                          rows.length>1?h("button",{style:{background:"#2d0a0a",color:"#ef4444",border:"1px solid #991b1b",borderRadius:4,padding:"4px 8px",cursor:"pointer",fontSize:12,fontWeight:700},
+                            onClick:()=>setV(f.key,rows.filter((_,i)=>i!==idx))
+                          },"✕"):h("div",null)
+                        ),
+                        // Mostrar cálculo de cajas debajo de cada fila
+                        cajasStr&&h("div",{style:{display:"flex",alignItems:"center",gap:8,marginTop:4,padding:"4px 8px",background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:4}},
+                          h("span",{style:{fontSize:10,color:"#60a5fa"}},"📦"),
+                          h("span",{style:{fontSize:11,color:"#60a5fa",fontWeight:600}},cajasStr),
+                          h("span",{style:{fontSize:10,color:"#555"}},
+                            cajas.tipo==="tarimas"?"(pz ÷ 126)":
+                            cajas.div?"(pz ÷ "+cajas.div+")":""
+                          )
+                        )
+                      );
+                    }),
                     rows.length<(f.maxEntries||10)&&h("button",{
                       style:{background:"#0a1628",color:"#60a5fa",border:"1px solid #1e3a5f",borderRadius:4,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,marginTop:2},
                       onClick:()=>setV(f.key,[...rows,{producto:"",lote:"",cantidad:""}])
@@ -1127,16 +1214,22 @@ function App(){
           return h("div",{key:f.key,style:{marginBottom:12}},
             h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginBottom:6}},f.label),
             rows.length===0?h("div",{style:{fontSize:12,color:"#444"}},"—"):h("div",null,
-              h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:6,marginBottom:4,borderBottom:"1px solid #2a2a2a",paddingBottom:4}},
+              h("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1.5fr",gap:6,marginBottom:4,borderBottom:"1px solid #2a2a2a",paddingBottom:4}},
                 h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Producto"),
                 h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"No. Lote"),
-                h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Cantidad")
+                h("span",{style:{fontSize:9,color:"#f59e0b",letterSpacing:1,textTransform:"uppercase"}},"Piezas"),
+                h("span",{style:{fontSize:9,color:"#60a5fa",letterSpacing:1,textTransform:"uppercase"}},"Cajas / Tarimas")
               ),
-              ...rows.map((r,i)=>h("div",{key:i,style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:6,padding:"5px 0",borderBottom:"1px solid #1a1a1a"}},
-                h("span",{style:{fontSize:12}},r.producto||"—"),
-                h("span",{style:{fontSize:12,color:"#aaa"}},r.lote||"—"),
-                h("span",{style:{fontSize:12,color:"#aaa"}},r.cantidad||"—")
-              ))
+              ...rows.map((r,i)=>{
+                const cajas=calcCajas(r.producto,r.cantidad);
+                const cajasStr=fmtCajas(cajas);
+                return h("div",{key:i,style:{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1.5fr",gap:6,padding:"5px 0",borderBottom:"1px solid #1a1a1a"}},
+                  h("span",{style:{fontSize:12}},r.producto||"—"),
+                  h("span",{style:{fontSize:12,color:"#aaa"}},r.lote||"—"),
+                  h("span",{style:{fontSize:12,color:"#aaa"}},r.cantidad||"—"),
+                  h("span",{style:{fontSize:11,color:"#60a5fa",fontWeight:600}},cajasStr||"—")
+                );
+              })
             )
           );
         }
