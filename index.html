@@ -21,9 +21,27 @@ const {useState,useEffect,useRef,createElement:h}=React;
 
 // ─── DATOS ────────────────────────────────────────────────────────────────────
 const INSPECTORES=[
-  {id:"brayan", name:"Brayan Uriel Martínez Martínez", short:"Brayan", puesto:"Auxiliar de Almacén"},
-  {id:"sebastian", name:"Sebastian Prieto Cervantes", short:"Sebastian", puesto:"Encargado de Almacén"},
+  {id:"brayan", name:"Brayan Uriel Martínez Martínez", short:"Brayan", puesto:"Auxiliar de Almacén", area:"Almacén"},
+  {id:"sebastian", name:"Sebastian Prieto Cervantes", short:"Sebastian", puesto:"Encargado de Almacén", area:"Almacén"},
 ];
+
+// Areas de la empresa
+const AREAS_EMPRESA={
+  almacen:{
+    label:"Almacén",
+    icon:"🏭",
+    color:"#f59e0b",
+    inspectores:["brayan","sebastian"],
+    formKeys:["alm1_pt","alm2_pt","alm1_mp","alm2_mp","recepcion","etiquetas","bobinas","transporte"],
+  },
+  produccion:{
+    label:"Producción",
+    icon:"⚙️",
+    color:"#34d399",
+    inspectores:[],
+    formKeys:[],
+  },
+};
 const ALMACEN_FIELDS=[
   {key:"area_limpia",label:"Área limpia y seca",type:"check"},
   {key:"sin_olores",label:"Área sin olores extraños",type:"check"},
@@ -52,6 +70,7 @@ const RECEPCION_FIELDS=[
   {key:"no_lote",label:"No. de Lote",type:"text",placeholder:"Número de lote"},
   {key:"cantidad",label:"Cantidad",type:"text",placeholder:"Cantidad recibida"},
   {key:"cantidad_muestrear",label:"Cantidad a muestrear (piezas)",type:"text",placeholder:"Piezas"},
+  {key:"no_pedido_rec",label:"No. de Pedido",type:"text",placeholder:"Número de pedido"},
   {key:"t_higiene",label:"Muestra Higiene Personal",type:"check",group:"Transportista"},
   {key:"t_ropa",label:"Viste ropa limpia",type:"check",group:"Transportista"},
   {key:"c_olores",label:"Sin olores extraños",type:"check",group:"Caja de Transporte"},
@@ -87,6 +106,28 @@ const AREA_FORMS={
   alm1_mp:{area:"Almacén 1",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   alm2_mp:{area:"Almacén 2",title:"Registro Preservación de Materias Primas",fields:ALMACEN_FIELDS},
   recepcion:{area:"Recepción",title:"Recepción de Materias Primas",fields:RECEPCION_FIELDS},
+  etiquetas:{area:"Recepción",title:"Registro Inspección Recibo de Etiquetas",fields:[
+    {key:"proveedor",label:"Proveedor",type:"text",placeholder:"Nombre del proveedor"},
+    {key:"producto",label:"Producto",type:"text",placeholder:"Descripción del producto"},
+    {key:"no_pedido",label:"No. de Pedido",type:"text",placeholder:"Número de pedido"},
+    {key:"cfdi",label:"CFDI y/o Remisión",type:"text",placeholder:"Folio"},
+    {key:"fecha_arribo",label:"Fecha de arribo",type:"date"},
+    {key:"no_lote",label:"No. de Lote",type:"text",placeholder:"Número de lote"},
+    {key:"cantidad",label:"Cantidad (piezas)",type:"text",placeholder:"Piezas"},
+    {key:"cant_muestrear",label:"Cantidad a muestrear (piezas)",type:"text",placeholder:"Piezas"},
+    {key:"tr_higiene",label:"Muestra higiene personal",type:"check",group:"Transportista"},
+    {key:"tr_ropa",label:"Viste ropa limpia",type:"check",group:"Transportista"},
+    {key:"cj_olores",label:"Sin olores extraños",type:"check",group:"Caja de Transporte"},
+    {key:"cj_luz",label:"Sin infiltración de luz en techo y paredes",type:"check",group:"Caja de Transporte"},
+    {key:"cj_plagas",label:"Sin insectos, roedores, aves u otros animales",type:"check",group:"Caja de Transporte"},
+    {key:"cj_suelo",label:"Producto sin estar en contacto directo con el suelo",type:"check",group:"Caja de Transporte"},
+    {key:"et_dim",label:"La etiqueta debe cumplir con las dimensiones aprobadas en el diseño",type:"check",group:"Etiquetas"},
+    {key:"et_margenes",label:"Los márgenes, alineación y distribución de elementos deben respetar el layout autorizado",type:"check",group:"Etiquetas"},
+    {key:"et_cortes",label:"No debe haber cortes de texto o imágenes fuera del área imprimible",type:"check",group:"Etiquetas"},
+    {key:"et_bordes",label:"Los bordes deben estar limpios y sin rebabas",type:"check",group:"Etiquetas"},
+    {key:"et_rasgaduras",label:"La etiqueta no debe presentar rasgaduras, dobleces, perforaciones o daños visibles",type:"check",group:"Etiquetas"},
+    {key:"et_pelicula",label:"Película superior íntegra",type:"check",group:"Etiquetas"},
+  ]},
   bobinas:{area:"Recepción",title:"Registro Inspección Recibo de Bobinas",fields:[
     {key:"proveedor",label:"Proveedor",type:"text",placeholder:"Nombre del proveedor"},
     {key:"producto",label:"Producto",type:"text",placeholder:"Descripción del producto"},
@@ -141,8 +182,8 @@ const AREA_FORMS={
   ]},
 };
 const FORM_KEYS=Object.keys(AREA_FORMS);
-const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚",bobinas:"🎞️",transporte:"🚛"};
-const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa",bobinas:"#fb923c",transporte:"#34d399"};
+const FORM_ICONS={alm1_pt:"📦",alm2_pt:"📦",alm1_mp:"🌿",alm2_mp:"🌿",recepcion:"🚚",etiquetas:"🏷️",bobinas:"🎞️",transporte:"🚛"};
+const FORM_COLORS={alm1_pt:"#f59e0b",alm2_pt:"#f59e0b",alm1_mp:"#60a5fa",alm2_mp:"#60a5fa",recepcion:"#a78bfa",etiquetas:"#f472b6",bobinas:"#fb923c",transporte:"#34d399"};
 const getInspector=id=>INSPECTORES.find(i=>i.id===id)||{name:id,puesto:""};
 const FORMS_KEY="inspectpro-local-v1";
 // Per-form storage keys
@@ -152,6 +193,7 @@ const FORM_STORAGE_KEYS={
   alm1_mp:"ip-alm1-mp",
   alm2_mp:"ip-alm2-mp",
   recepcion:"ip-recepcion",
+  etiquetas:"ip-etiquetas",
   bobinas:"ip-bobinas",
   transporte:"ip-transporte",
 };
@@ -305,6 +347,35 @@ function exportPDF(record){
 }
 
 
+// ─── FRASES MOTIVADORAS ──────────────────────────────────────────────────────
+const FRASES=[
+  {frase:"La calidad no es un acto, es un hábito.", autor:"Aristóteles"},
+  {frase:"El detalle marca la diferencia entre lo bueno y lo excelente.", autor:""},
+  {frase:"Un equipo comprometido con la calidad construye confianza cada día.", autor:""},
+  {frase:"La disciplina es el puente entre las metas y los logros.", autor:"Jim Rohn"},
+  {frase:"Inspeccionar con cuidado hoy evita problemas mañana.", autor:""},
+  {frase:"La excelencia no es una excepción, es una actitud prevalente.", autor:"Colin Powell"},
+  {frase:"Pequeñas mejoras constantes generan grandes resultados.", autor:""},
+  {frase:"El trabajo bien hecho es la mejor tarjeta de presentación.", autor:""},
+  {frase:"La calidad comienza en la mente antes de llegar a las manos.", autor:""},
+  {frase:"Cada registro es un compromiso con la excelencia de tu equipo.", autor:""},
+  {frase:"La atención al detalle es lo que separa lo ordinario de lo extraordinario.", autor:""},
+  {frase:"No busques culpables, busca soluciones.", autor:""},
+  {frase:"El orden y la limpieza son la base de todo proceso exitoso.", autor:""},
+  {frase:"Tu trabajo de hoy es el estándar del equipo de mañana.", autor:""},
+  {frase:"La prevención siempre es más económica que la corrección.", autor:""},
+  {frase:"Un registro bien hecho vale más que mil palabras.", autor:""},
+  {frase:"La consistencia es la madre de la calidad.", autor:""},
+  {frase:"Quien cuida el proceso, cuida el producto.", autor:""},
+  {frase:"El orgullo por el trabajo bien hecho es la mejor motivación.", autor:""},
+  {frase:"Cada día es una oportunidad de hacer las cosas mejor que ayer.", autor:""},
+];
+function getFraseDelDia(){
+  const d=new Date();
+  const idx=(d.getFullYear()*366+d.getMonth()*31+d.getDate())%FRASES.length;
+  return FRASES[idx];
+}
+
 // ─── CALCULADORA DE CAJAS ─────────────────────────────────────────────────────
 function calcCajas(producto, piezas){
   if(!producto || !piezas || isNaN(parseInt(piezas))) return null;
@@ -332,8 +403,8 @@ function calcCajas(producto, piezas){
   if(p.includes('220')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
   // 130gr
   if(p.includes('130')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
-  // Pesaj 650gr — no tiene fórmula definida, manual
-  if(p.includes('pesaj')) return null;
+  // Pesaj 650gr — pz / 12
+  if(p.includes('pesaj')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
   // Salsas
   if(p.includes('salsa')) return { tipo:'cajas', div:12, completas:Math.floor(pz/12), sueltas:pz%12 };
   // Rice caja 12pz
@@ -768,7 +839,8 @@ function TempModule({onBack}){
 
 // ─── APP PRINCIPAL ────────────────────────────────────────────────────────────
 function App(){
-  const [module,setModule]=useState("home"); // home | forms | temp
+  const [module,setModule]=useState("welcome"); // welcome | home | forms | temp
+  const [activeArea,setActiveArea]=useState("almacen");
   const [currentUser,setCurrentUser]=useState(INSPECTORES[0].id);
   const [records,setRecords]=useState(()=>loadAllRecords());
   const [activeTab,setActiveTab]=useState(FORM_KEYS[0]);
@@ -841,6 +913,46 @@ function App(){
   // ── Módulo temperaturas
   if(module==="temp") return h(TempModule,{onBack:()=>setModule("home")});
 
+  // ── BIENVENIDA
+  if(module==="welcome"){
+    const frase=getFraseDelDia();
+    const greeting=new Date().getHours()<12?"¡Buenos días! ☀️":new Date().getHours()<18?"¡Buenas tardes! 🌤️":"¡Buenas noches! 🌙";
+    return h("div",{style:{...S.app,minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:24,background:"#0a0a0a"}},
+      h("div",{style:{textAlign:"center",marginBottom:28}},
+        h("div",{style:{fontSize:52,marginBottom:6,color:"#f59e0b"}},"⬡"),
+        h("div",{style:{fontSize:26,fontWeight:700,color:"#f59e0b",letterSpacing:4,textTransform:"uppercase"}},"InspectPro"),
+        h("div",{style:{fontSize:11,color:"#555",letterSpacing:2,marginTop:4,marginBottom:12}},"Sistema de inspección y calidad"),
+        h("div",{style:{fontSize:16,color:"#aaa"}},greeting),
+        h("div",{style:{fontSize:13,color:"#555",marginTop:4}},"Bienvenido a InspectPro")
+      ),
+      h("div",{style:{background:"#0f1a0f",border:"1px solid #166534",borderRadius:8,padding:"16px 20px",marginBottom:28,maxWidth:480,width:"100%",textAlign:"center"}},
+        h("div",{style:{fontSize:9,color:"#22c55e",letterSpacing:2,textTransform:"uppercase",marginBottom:8}},"💬 Frase del día"),
+        h("div",{style:{fontSize:13,color:"#e5e5e5",fontStyle:"italic",lineHeight:1.6}},frase.frase),
+        frase.autor&&h("div",{style:{fontSize:11,color:"#555",marginTop:8}},"— "+frase.autor)
+      ),
+      h("div",{style:{maxWidth:480,width:"100%",marginBottom:16}},
+        h("div",{style:{fontSize:11,color:"#f59e0b",letterSpacing:2,textTransform:"uppercase",marginBottom:10,textAlign:"center"}},"👤 ¿Quién eres?"),
+        h("div",{style:{display:"flex",flexDirection:"column",gap:10}},
+          ...INSPECTORES.map(i=>{
+            const areaKey=Object.keys(AREAS_EMPRESA).find(k=>AREAS_EMPRESA[k].inspectores.includes(i.id))||"almacen";
+            const area=AREAS_EMPRESA[areaKey];
+            return h("button",{key:i.id,
+              onClick:()=>{setCurrentUser(i.id);setActiveArea(areaKey);setModule("home");},
+              style:{background:"#1a1a1a",color:"#e5e5e5",border:"2px solid #2a2a2a",borderRadius:8,padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
+              h("div",{style:{width:42,height:42,borderRadius:"50%",background:"#222",border:"1px solid #333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}},"👤"),
+              h("div",null,
+                h("div",{style:{fontSize:13,fontWeight:700}},i.name),
+                h("div",{style:{fontSize:11,color:"#666",marginTop:2}},i.puesto+" · "+area?.label)
+              ),
+              h("span",{style:{marginLeft:"auto",color:"#444",fontSize:18}},"›")
+            );
+          })
+        )
+      ),
+      h("div",{style:{fontSize:10,color:"#333",textAlign:"center"}},"Selecciona tu nombre para continuar")
+    );
+  }
+
   // ── HOME principal
   if(module==="home") return h("div",{style:S.app},
     h("div",{style:S.hdr},
@@ -848,62 +960,99 @@ function App(){
       h("div",{style:S.nav},
         h("div",{style:{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #f59e0b44",borderRadius:6,padding:"4px 10px"}},
           h("span",{style:{fontSize:12}},"👤"),
-          h("select",{style:{background:"transparent",color:"#f59e0b",border:"none",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"},value:currentUser,onChange:e=>setCurrentUser(e.target.value)},
+          h("select",{style:{background:"transparent",color:"#f59e0b",border:"none",fontSize:11,fontWeight:600,cursor:"pointer",outline:"none"},value:currentUser,onChange:e=>{setCurrentUser(e.target.value); const usr=INSPECTORES.find(i=>i.id===e.target.value); if(usr) setActiveArea(Object.keys(AREAS_EMPRESA).find(ak=>AREAS_EMPRESA[ak].inspectores.includes(e.target.value))||activeArea);}},
             ...INSPECTORES.map(i=>h("option",{key:i.id,value:i.id},i.short+" — "+i.puesto))
           )
         ),
-        h("button",{style:S.nBtn(false),onClick:()=>{setFormView("history");setModule("forms");}},"Historial")
+        h("button",{style:S.nBtn(false),onClick:()=>{setFormView("history");setModule("forms");}},"Historial"),
+        h("button",{style:{...S.nBtn(false),fontSize:10},onClick:()=>setModule("welcome")},"⏏ Salir")
       )
     ),
     h("div",{style:S.body},
       h("div",{style:{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:6,padding:"9px 14px",marginBottom:16,display:"flex",gap:9,fontSize:11,color:"#60a5fa"}},
         h("span",null,"💾"),h("span",null,"Datos guardados automáticamente en este navegador.")
       ),
-      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:22}},
-        ...[{label:"Total registros",value:records.length,color:"#f59e0b"},{label:"Aprobados",value:records.filter(r=>r.score&&(r.score.pass/(r.score.total-(r.score.na||0)||1))>=0.8).length,color:"#22c55e"},{label:"Con observaciones",value:records.filter(r=>r.score&&(r.score.pass/(r.score.total-(r.score.na||0)||1))<0.8).length,color:"#ef4444"}]
-          .map(s=>h("div",{key:s.label,style:{...S.card,textAlign:"center",borderColor:s.color+"44",padding:14}},
-            h("div",{style:{fontSize:32,fontWeight:700,color:s.color}},s.value),
-            h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginTop:2}},s.label)
-          ))
+      h("div",{style:{background:"#2d1a00",border:"2px solid #f59e0b",borderRadius:6,padding:"11px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:10}},
+        h("span",{style:{fontSize:20}},"⚠️"),
+        h("div",null,
+          h("div",{style:{fontSize:12,fontWeight:700,color:"#f59e0b",marginBottom:2}},"Verifica tu usuario antes de llenar cualquier formulario"),
+          h("div",{style:{fontSize:11,color:"#a16207"}},"Usuario activo: "+getInspector(currentUser).name+" — "+getInspector(currentUser).puesto)
+        )
       ),
-      // Botón temperaturas destacado
-      h("button",{onClick:()=>setModule("temp"),style:{background:"#0a1a2a",border:"2px solid #60a5fa44",borderRadius:8,padding:"16px 20px",cursor:"pointer",width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:16}},
+
+
+      // ── Selector de área
+      h("div",{style:{display:"flex",gap:10,marginBottom:20}},
+        ...Object.entries(AREAS_EMPRESA).map(([ak,av])=>h("button",{key:ak,
+          onClick:()=>setActiveArea(ak),
+          style:{flex:1,background:activeArea===ak?av.color+"22":"#111",color:activeArea===ak?av.color:"#666",border:`2px solid ${activeArea===ak?av.color:av.color+"33"}`,borderRadius:8,padding:"12px 10px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontWeight:700,fontSize:12}},
+          h("span",{style:{fontSize:18}},av.icon),
+          av.label
+        ))
+      ),
+
+      // ── Stats del área activa
+      (()=>{
+        const areaRecs=records.filter(r=>AREAS_EMPRESA[activeArea]?.formKeys.includes(r.formKey));
+        return h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:20}},
+          ...[{label:"Registros",value:areaRecs.length,color:AREAS_EMPRESA[activeArea]?.color||"#f59e0b"},
+              {label:"Aprobados",value:areaRecs.filter(r=>r.score&&(r.score.pass/(r.score.total-(r.score.na||0)||1))>=0.8).length,color:"#22c55e"},
+              {label:"Con observaciones",value:areaRecs.filter(r=>r.score&&(r.score.pass/(r.score.total-(r.score.na||0)||1))<0.8).length,color:"#ef4444"}]
+            .map(s=>h("div",{key:s.label,style:{...S.card,textAlign:"center",borderColor:s.color+"44",padding:14}},
+              h("div",{style:{fontSize:28,fontWeight:700,color:s.color}},s.value),
+              h("div",{style:{fontSize:9,color:"#666",letterSpacing:1,textTransform:"uppercase",marginTop:2}},s.label)
+            ))
+        );
+      })(),
+
+      // ── Temperatura solo en almacén
+      activeArea==="almacen"&&h("button",{onClick:()=>setModule("temp"),style:{background:"#0a1a2a",border:"2px solid #60a5fa44",borderRadius:8,padding:"16px 20px",cursor:"pointer",width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:16}},
         h("span",{style:{fontSize:28}},"🌡️"),
         h("div",null,
-          h("div",{style:{fontSize:12,fontWeight:700,color:"#60a5fa",letterSpacing:1}},`Control de Temperaturas`),
+          h("div",{style:{fontSize:12,fontWeight:700,color:"#60a5fa",letterSpacing:1}},"Control de Temperaturas"),
           h("div",{style:{fontSize:10,color:"#555",marginTop:2}},"Almacén 1 y Almacén 2 — Gráfica mensual")
         ),
         h("span",{style:{marginLeft:"auto",color:"#60a5fa",fontSize:18}},"›")
       ),
+
+      // ── Formularios del área activa
       h("div",{style:S.card},
-        h("div",{style:S.secTit},"Formularios de inspección"),
-        h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
-          ...FORM_KEYS.map(key=>{
-            const def=AREA_FORMS[key],col=FORM_COLORS[key];
-            return h("button",{key,onClick:()=>openForm(key),style:{background:"#111",color:"#e5e5e5",border:`1px solid ${col}33`,borderRadius:7,padding:"13px 15px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:5}},
-              h("div",{style:{display:"flex",alignItems:"center",gap:6}},
-                h("span",{style:{fontSize:16}},FORM_ICONS[key]),
-                h("span",{style:{background:col+"22",color:col,borderRadius:4,padding:"2px 6px",fontSize:9,fontWeight:700}},def.area)
-              ),
-              h("div",{style:{fontSize:10,fontWeight:700,lineHeight:1.3}},def.title)
-            );
-          })
-        )
+        h("div",{style:S.secTit},AREAS_EMPRESA[activeArea]?.label+" — Formularios de inspección"),
+        AREAS_EMPRESA[activeArea]?.formKeys.length===0
+          ? h("div",{style:{textAlign:"center",padding:30,color:"#444"}},
+              h("div",{style:{fontSize:32,marginBottom:8}},"🚧"),
+              h("div",{style:{fontSize:13,marginBottom:4}},"Próximamente"),
+              h("div",{style:{fontSize:11,color:"#555"}},"Los formularios de esta área se agregarán pronto")
+            )
+          : h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
+              ...(AREAS_EMPRESA[activeArea]?.formKeys||[]).map(key=>{
+                const def=AREA_FORMS[key],col=FORM_COLORS[key];
+                return h("button",{key,onClick:()=>openForm(key),style:{background:"#111",color:"#e5e5e5",border:`1px solid ${col}33`,borderRadius:7,padding:"13px 15px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:5}},
+                  h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+                    h("span",{style:{fontSize:16}},FORM_ICONS[key]),
+                    h("span",{style:{background:col+"22",color:col,borderRadius:4,padding:"2px 6px",fontSize:9,fontWeight:700}},def.area)
+                  ),
+                  h("div",{style:{fontSize:10,fontWeight:700,lineHeight:1.3}},def.title)
+                );
+              })
+            )
       ),
-      records.length>0&&h("div",{style:S.card},
-        h("div",{style:S.secTit},"Últimos registros"),
-        ...records.slice(0,3).map(r=>
-          h("div",{key:r.id,style:S.hRow,onClick:()=>{setSel(r);setFormView("detail");setModule("forms");}},
-            h("span",{style:{fontSize:16}},FORM_ICONS[r.formKey]||"📋"),
-            h("div",{style:{flex:1}},
-              h("div",{style:{fontSize:12,fontWeight:700}},r.title),
-              h("div",{style:{fontSize:10,color:"#666"}},`${r.area} · ${r.inspector} · ${fmtDate(r.createdAt)}`)
-            ),
-            h(StatusBadge,{score:r.score}),
-            h("span",{style:{color:"#444"}},"›")
+      (()=>{const areaRecs=records.filter(r=>AREAS_EMPRESA[activeArea]?.formKeys.includes(r.formKey));
+        return areaRecs.length>0&&h("div",{style:S.card},
+          h("div",{style:S.secTit},"Últimos registros"),
+          ...areaRecs.slice(0,3).map(r=>
+            h("div",{key:r.id,style:S.hRow,onClick:()=>{setSel(r);setFormView("detail");setModule("forms");}},
+              h("span",{style:{fontSize:16}},FORM_ICONS[r.formKey]||"📋"),
+              h("div",{style:{flex:1}},
+                h("div",{style:{fontSize:12,fontWeight:700}},r.title),
+                h("div",{style:{fontSize:10,color:"#666"}},`${r.area} · ${r.inspector} · ${fmtDate(r.createdAt)}`)
+              ),
+              h(StatusBadge,{score:r.score}),
+              h("span",{style:{color:"#444"}},"›")
+            )
           )
-        )
-      )
+        );
+      })()
     )
   );
 
@@ -1075,7 +1224,7 @@ function App(){
                     )
                   ),
                   f.type==="check_with_input"&&h("div",{style:{marginTop:6,display:"flex",alignItems:"center",gap:7}},
-                    h("input",{type:f.inputType||"text",style:f.inputType==="date"?S.dateInp:S.tempInp,value:vals[f.key+"_val"]||"",placeholder:f.placeholder||"",onChange:e=>setV(f.key+"_val",e.target.value)}),
+                    h("input",{type:f.inputType||"text",style:{...(f.inputType==="date"?S.dateInp:S.tempInp),opacity:vals[f.key+"_check"]==="na"?0.3:1},disabled:vals[f.key+"_check"]==="na",value:vals[f.key+"_check"]==="na"?"":vals[f.key+"_val"]||"",placeholder:f.placeholder||"",onChange:e=>setV(f.key+"_val",e.target.value)}),
                     h("span",{style:{fontSize:10,color:"#666"}},f.inputType==="date"?"Fecha registrada":"°C registrado")
                   )
                 );
